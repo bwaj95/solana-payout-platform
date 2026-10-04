@@ -1,0 +1,18 @@
+[toolchain]
+package_manager = "pnpm"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+solana_payout_platform = "5SWH7YmBC7Tiri1MQLDbnWc1yTn3QqYBC1g9H3mZgbhv"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "cargo test"
+
+[hooks]
