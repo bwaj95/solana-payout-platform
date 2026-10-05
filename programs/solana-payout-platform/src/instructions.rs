@@ -1,3 +1,3 @@
-pub mod initialize;
+pub mod initialize_organization;
 
-pub use initialize::*;
+pub use initialize_organization::*;

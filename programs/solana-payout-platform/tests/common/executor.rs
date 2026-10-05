@@ -1,0 +1,44 @@
+use litesvm::{
+    types::{FailedTransactionMetadata, TransactionMetadata},
+    LiteSVM,
+};
+use solana_message::{Instruction, Message, VersionedMessage};
+use solana_pubkey::Pubkey;
+use solana_signer::Signer;
+use solana_transaction::versioned::VersionedTransaction;
+
+use crate::common::{instructions::initialize_organization_ix, users::User};
+
+///  Builds and submits a transaction to LiteSVM.
+pub fn execute_transaction(
+    svm: &mut LiteSVM,
+    payer: &Pubkey,
+    signers: &[&dyn Signer],
+    ixs: &[Instruction],
+) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+    let blockhash = svm.latest_blockhash();
+    let msg = Message::new_with_blockhash(ixs, Some(payer), &blockhash);
+    let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), signers).unwrap();
+
+    svm.send_transaction(tx)
+}
+
+pub fn initialize_organization(
+    program_id: &Pubkey,
+    svm: &mut LiteSVM,
+    creator: &User,
+    organization_id: u64,
+    owner_member_id: u64,
+) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+    let ix = initialize_organization_ix(
+        program_id,
+        &creator.pubkey(),
+        organization_id,
+        owner_member_id,
+    );
+
+    let payer = creator.pubkey();
+    let signer = creator.signer();
+
+    execute_transaction(svm, &payer, &[signer], &[ix])
+}
