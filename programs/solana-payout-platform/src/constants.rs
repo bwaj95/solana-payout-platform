@@ -4,11 +4,21 @@ use anchor_lang::prelude::*;
 
 pub const ORGANIZATION_SEED: &[u8] = b"organization";
 pub const MEMBER_SEED: &[u8] = b"member";
+pub const MEMBER_WALLET_SEED: &[u8] = b"member_wallet";
 
 pub const INITIAL_AUTHORIZATION_REVISION: u64 = 1;
 
 // A bitmask lets one Member hold multiple roles without storing a variable-length vector.
 pub const ROLE_OWNER: u16 = 1 << 0;
 pub const ROLE_ADMIN: u16 = 1 << 1;
+pub const ROLE_PREPARER: u16 = 1 << 2;
+pub const ROLE_APPROVER: u16 = 1 << 3;
+pub const ROLE_EXECUTOR: u16 = 1 << 4;
+pub const ROLE_FINANCE: u16 = 1 << 5;
+pub const ROLE_TREASURY: u16 = 1 << 6;
 
 pub const INITIAL_OWNER_ROLES: u16 = ROLE_OWNER | ROLE_ADMIN;
+
+// ASSIGNABLE_MEMBER_ROLES should exclude ROLE_OWNER
+pub const ASSIGNABLE_MEMBER_ROLES: u16 =
+    ROLE_ADMIN | ROLE_PREPARER | ROLE_APPROVER | ROLE_EXECUTOR | ROLE_FINANCE | ROLE_TREASURY;

@@ -7,7 +7,10 @@ use solana_pubkey::Pubkey;
 use solana_signer::Signer;
 use solana_transaction::versioned::VersionedTransaction;
 
-use crate::common::{instructions::initialize_organization_ix, users::User};
+use crate::common::{
+    instructions::{create_member_ix, initialize_organization_ix},
+    users::User,
+};
 
 ///  Builds and submits a transaction to LiteSVM.
 pub fn execute_transaction(
@@ -41,4 +44,27 @@ pub fn initialize_organization(
     let signer = creator.signer();
 
     execute_transaction(svm, &payer, &[signer], &[ix])
+}
+
+pub fn create_member(
+    program_id: &Pubkey,
+    svm: &mut LiteSVM,
+    authority: &User,
+    organization: &Pubkey,
+    admin_member: &Pubkey,
+    member_id: u64,
+    authorized_wallet: &Pubkey,
+    roles: u16,
+) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+    let ix = create_member_ix(
+        program_id,
+        &authority.pubkey(),
+        organization,
+        admin_member,
+        member_id,
+        authorized_wallet,
+        roles,
+    );
+
+    execute_transaction(svm, &authority.pubkey(), &[authority.signer()], &[ix])
 }

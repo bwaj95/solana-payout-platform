@@ -1,4 +1,4 @@
-use solana_payout_platform::{MEMBER_SEED, ORGANIZATION_SEED};
+use solana_payout_platform::{MEMBER_SEED, MEMBER_WALLET_SEED, ORGANIZATION_SEED};
 use solana_pubkey::Pubkey;
 
 pub fn find_organization_pda(
@@ -22,6 +22,21 @@ pub fn find_member_pda(program_id: &Pubkey, organization: &Pubkey, member_id: u6
             MEMBER_SEED,
             organization.as_ref(),
             member_id.to_le_bytes().as_ref(),
+        ],
+        program_id,
+    )
+}
+
+pub fn find_member_wallet_pda(
+    program_id: &Pubkey,
+    organization: &Pubkey,
+    authorized_wallet: &Pubkey,
+) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[
+            MEMBER_WALLET_SEED,
+            organization.as_ref(),
+            authorized_wallet.as_ref(),
         ],
         program_id,
     )

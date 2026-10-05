@@ -1,8 +1,9 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    events::OrganizationInitialized, Member, Organization, INITIAL_AUTHORIZATION_REVISION,
-    INITIAL_OWNER_ROLES, MEMBER_SEED, ORGANIZATION_SEED,
+    events::OrganizationInitialized, Member, MemberWallet, Organization,
+    INITIAL_AUTHORIZATION_REVISION, INITIAL_OWNER_ROLES, MEMBER_SEED, MEMBER_WALLET_SEED,
+    ORGANIZATION_SEED,
 };
 
 #[derive(Accounts)]
@@ -28,6 +29,19 @@ pub struct InitializeOrganization<'info> {
         bump
     )]
     pub owner_member: Account<'info, Member>,
+
+    #[account(
+    init,
+    payer = creator,
+    space = 8 + MemberWallet::INIT_SPACE,
+    seeds = [
+        MEMBER_WALLET_SEED,
+        organization.key().as_ref(),
+        creator.key().as_ref(),
+    ],
+    bump
+    )]
+    pub owner_member_wallet: Account<'info, MemberWallet>,
 
     pub system_program: Program<'info, System>,
 }
@@ -57,6 +71,13 @@ pub fn initialize_organization_handler(
         roles: INITIAL_OWNER_ROLES,
         active: true,
         bump: ctx.bumps.owner_member,
+    });
+
+    ctx.accounts.owner_member_wallet.set_inner(MemberWallet {
+        organization,
+        member: owner_member,
+        authorized_wallet: creator,
+        bump: ctx.bumps.owner_member_wallet,
     });
 
     emit!(OrganizationInitialized {

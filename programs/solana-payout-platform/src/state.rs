@@ -23,3 +23,12 @@ pub struct Member {
     pub active: bool,
     pub bump: u8,
 }
+
+#[account]
+#[derive(InitSpace)]
+pub struct MemberWallet {
+    pub organization: Pubkey,
+    pub member: Pubkey,
+    pub authorized_wallet: Pubkey,
+    pub bump: u8,
+}

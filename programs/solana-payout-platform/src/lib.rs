@@ -28,4 +28,13 @@ pub mod solana_payout_platform {
             owner_member_id,
         )
     }
+
+    pub fn create_member(
+        ctx: Context<CreateMember>,
+        member_id: u64,
+        authorized_wallet: Pubkey,
+        roles: u16,
+    ) -> Result<()> {
+        instructions::create_member::create_member_handler(ctx, member_id, authorized_wallet, roles)
+    }
 }
