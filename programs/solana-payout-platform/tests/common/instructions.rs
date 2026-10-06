@@ -1,9 +1,13 @@
-use anchor_lang::{system_program, InstructionData, ToAccountMetas};
+use anchor_lang::{
+    solana_program::instruction::AccountMeta, system_program, InstructionData, ToAccountMetas,
+};
 use solana_message::Instruction;
 use solana_payout_platform::{accounts, instruction};
 use solana_pubkey::Pubkey;
 
-use crate::common::pda::{find_member_pda, find_member_wallet_pda, find_organization_pda};
+use crate::common::pda::{
+    find_member_pda, find_member_wallet_pda, find_organization_pda, find_policy_version_pda,
+};
 
 pub fn initialize_organization_ix(
     program_id: &Pubkey,
@@ -87,6 +91,50 @@ pub fn create_member_ix(
             member_id,
             authorized_wallet: *authorized_wallet,
             roles,
+        }
+        .data(),
+    }
+}
+
+pub fn create_policy_version_ix(
+    program_id: &Pubkey,
+    authority: &Pubkey,
+    organization: &Pubkey,
+    admin_member: &Pubkey,
+    policy_id: u64,
+    version: u64,
+    threshold: u8,
+    eligible_members: &[Pubkey],
+) -> Instruction {
+    let (approval_policy_version, _) =
+        find_policy_version_pda(program_id, organization, policy_id, version);
+
+    let mut account_metas = accounts::CreatePolicyVersion {
+        authority: *authority,
+        organization: *organization,
+        admin_member: *admin_member,
+        approval_policy_version,
+        system_program: system_program::ID,
+    }
+    .to_account_metas(None);
+
+    /*
+     * Accounts appended after the declared Anchor accounts become
+     * ctx.remaining_accounts inside the handler.
+     */
+    account_metas.extend(
+        eligible_members
+            .iter()
+            .map(|member| AccountMeta::new_readonly(*member, false)),
+    );
+
+    Instruction {
+        program_id: *program_id,
+        accounts: account_metas,
+        data: instruction::CreatePolicyVersion {
+            policy_id,
+            version,
+            threshold,
         }
         .data(),
     }

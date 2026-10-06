@@ -22,3 +22,8 @@ pub const INITIAL_OWNER_ROLES: u16 = ROLE_OWNER | ROLE_ADMIN;
 // ASSIGNABLE_MEMBER_ROLES should exclude ROLE_OWNER
 pub const ASSIGNABLE_MEMBER_ROLES: u16 =
     ROLE_ADMIN | ROLE_PREPARER | ROLE_APPROVER | ROLE_EXECUTOR | ROLE_FINANCE | ROLE_TREASURY;
+
+pub const POLICY_SEED: &[u8] = b"policy";
+
+// For each approval we need to provide the Member-Approval account pair. 8 is a reasonable upper bound.
+pub const MAX_POLICY_MEMBERS: u8 = 8;

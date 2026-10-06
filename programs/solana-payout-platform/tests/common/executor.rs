@@ -8,7 +8,7 @@ use solana_signer::Signer;
 use solana_transaction::versioned::VersionedTransaction;
 
 use crate::common::{
-    instructions::{create_member_ix, initialize_organization_ix},
+    instructions::{create_member_ix, create_policy_version_ix, initialize_organization_ix},
     users::User,
 };
 
@@ -64,6 +64,31 @@ pub fn create_member(
         member_id,
         authorized_wallet,
         roles,
+    );
+
+    execute_transaction(svm, &authority.pubkey(), &[authority.signer()], &[ix])
+}
+
+pub fn create_policy_version(
+    program_id: &Pubkey,
+    svm: &mut LiteSVM,
+    authority: &User,
+    organization: &Pubkey,
+    admin_member: &Pubkey,
+    policy_id: u64,
+    version: u64,
+    threshold: u8,
+    eligible_members: &[Pubkey],
+) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+    let ix = create_policy_version_ix(
+        program_id,
+        &authority.pubkey(),
+        organization,
+        admin_member,
+        policy_id,
+        version,
+        threshold,
+        eligible_members,
     );
 
     execute_transaction(svm, &authority.pubkey(), &[authority.signer()], &[ix])

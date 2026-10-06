@@ -20,3 +20,15 @@ pub struct MemberCreated {
     pub created_by_member: Pubkey,
     pub created_by_wallet: Pubkey,
 }
+
+#[event]
+pub struct PolicyVersionCreated {
+    pub organization: Pubkey,
+    pub policy_version: Pubkey,
+    pub policy_id: u64,
+    pub version: u64,
+    pub threshold: u8,
+    pub eligible_member_count: u8,
+    pub created_by_member: Pubkey,
+    pub created_by_wallet: Pubkey,
+}

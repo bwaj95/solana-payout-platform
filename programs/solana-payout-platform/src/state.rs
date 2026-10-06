@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
 
+use crate::MAX_POLICY_MEMBERS;
+
 #[account]
 #[derive(InitSpace)]
 pub struct Organization {
@@ -30,5 +32,23 @@ pub struct MemberWallet {
     pub organization: Pubkey,
     pub member: Pubkey,
     pub authorized_wallet: Pubkey,
+    pub bump: u8,
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct ApprovalPolicyVersion {
+    pub organization: Pubkey,
+
+    pub policy_id: u64,
+    pub version: u64,
+    pub created_by_member: Pubkey,
+
+    #[max_len(MAX_POLICY_MEMBERS)]
+    pub eligible_members: Vec<Pubkey>,
+    pub threshold: u8,
+
+    pub enabled: bool,
+
     pub bump: u8,
 }

@@ -19,4 +19,31 @@ pub enum ErrorCode {
 
     #[msg("The authorized wallet cannot be the default public key")]
     InvalidAuthorizedWallet,
+
+    #[msg("Policy ID must be greater than zero")]
+    InvalidPolicyId,
+
+    #[msg("Policy version must be greater than zero")]
+    InvalidPolicyVersion,
+
+    #[msg("The policy must contain at least one eligible member")]
+    EmptyPolicyMembers,
+
+    #[msg("The policy contains too many eligible members")]
+    TooManyPolicyMembers,
+
+    #[msg("The approval threshold is invalid")]
+    InvalidPolicyThreshold,
+
+    #[msg("The policy contains the same member more than once")]
+    DuplicatePolicyMember,
+
+    #[msg("An eligible member account is invalid")]
+    InvalidPolicyMember,
+
+    #[msg("An eligible policy member is inactive")]
+    InactivePolicyMember,
+
+    #[msg("An eligible policy member does not have the approver role")]
+    PolicyMemberMissingApproverRole,
 }
