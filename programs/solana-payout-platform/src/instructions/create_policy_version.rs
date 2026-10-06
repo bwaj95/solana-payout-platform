@@ -81,7 +81,7 @@ pub fn create_policy_version_handler(
             !eligible_members.contains(&member_key),
             ErrorCode::DuplicatePolicyMember
         );
-        
+
         // check account owned by prgram
         require_eq!(
             *account_info.owner,

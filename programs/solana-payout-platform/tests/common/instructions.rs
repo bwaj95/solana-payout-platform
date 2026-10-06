@@ -2,11 +2,11 @@ use anchor_lang::{
     solana_program::instruction::AccountMeta, system_program, InstructionData, ToAccountMetas,
 };
 use solana_message::Instruction;
-use solana_payout_platform::{accounts, instruction};
+use solana_payout_platform::{accounts::{self, InitializeVault}, instruction};
 use solana_pubkey::Pubkey;
 
 use crate::common::pda::{
-    find_member_pda, find_member_wallet_pda, find_organization_pda, find_policy_version_pda,
+    find_member_pda, find_member_wallet_pda, find_organization_pda, find_policy_version_pda, find_vault_state_pda, find_vault_token_account,
 };
 
 pub fn initialize_organization_ix(
@@ -137,5 +137,38 @@ pub fn create_policy_version_ix(
             threshold,
         }
         .data(),
+    }
+}
+
+
+pub fn initialize_vault_ix(
+    program_id: &Pubkey,
+    authority: &Pubkey,
+    organization: &Pubkey,
+    admin_member: &Pubkey,
+    mint: &Pubkey,
+    vault_id: u64,
+) -> Instruction {
+    let (vault_state, _) = find_vault_state_pda(program_id, organization, vault_id);
+
+    let vault_token_account = find_vault_token_account(&vault_state, mint);
+
+    let accounts = InitializeVault {
+        authority: *authority,
+        organization: *organization,
+        admin_member: *admin_member,
+        vault_state,
+        mint: *mint,
+        vault_token_account,
+        token_program: anchor_spl::token::ID,
+        associated_token_program: anchor_spl::associated_token::ID,
+        system_program: anchor_lang::system_program::ID,
+    }
+    .to_account_metas(None);
+
+    Instruction {
+        program_id: *program_id,
+        accounts,
+        data: instruction::InitializeVault { vault_id }.data(),
     }
 }

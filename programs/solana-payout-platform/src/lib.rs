@@ -48,4 +48,8 @@ pub mod solana_payout_platform {
             ctx, policy_id, version, threshold,
         )
     }
+
+    pub fn initialize_vault(ctx: Context<InitializeVault>, vault_id: u64) -> Result<()> {
+        instructions::initialize_vault::initialize_vault_handler(ctx, vault_id)
+    }
 }

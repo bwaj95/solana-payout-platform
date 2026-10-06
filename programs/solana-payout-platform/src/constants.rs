@@ -5,6 +5,7 @@ use anchor_lang::prelude::*;
 pub const ORGANIZATION_SEED: &[u8] = b"organization";
 pub const MEMBER_SEED: &[u8] = b"member";
 pub const MEMBER_WALLET_SEED: &[u8] = b"member_wallet";
+pub const VAULT_SEED: &[u8] = b"vault";
 
 pub const INITIAL_AUTHORIZATION_REVISION: u64 = 1;
 

@@ -52,3 +52,20 @@ pub struct ApprovalPolicyVersion {
 
     pub bump: u8,
 }
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq, InitSpace)]
+pub enum Asset {
+    NativeSol,
+    Spl { mint: Pubkey },
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct VaultState {
+    pub organization: Pubkey,
+    pub vault_id: u64,
+    pub asset: Asset,
+    pub reserved_total: u64,
+    pub active: bool,
+    pub bump: u8,
+}

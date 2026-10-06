@@ -46,4 +46,7 @@ pub enum ErrorCode {
 
     #[msg("An eligible policy member does not have the approver role")]
     PolicyMemberMissingApproverRole,
+
+    #[msg("Vault id must be greater than zero")]
+    InvalidVaultId,
 }

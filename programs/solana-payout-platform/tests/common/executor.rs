@@ -8,7 +8,7 @@ use solana_signer::Signer;
 use solana_transaction::versioned::VersionedTransaction;
 
 use crate::common::{
-    instructions::{create_member_ix, create_policy_version_ix, initialize_organization_ix},
+    instructions::{create_member_ix, create_policy_version_ix, initialize_organization_ix, initialize_vault_ix},
     users::User,
 };
 
@@ -92,4 +92,30 @@ pub fn create_policy_version(
     );
 
     execute_transaction(svm, &authority.pubkey(), &[authority.signer()], &[ix])
+}
+
+
+pub fn initialize_vault(
+    svm: &mut LiteSVM,
+    authority: &User,
+    organization: &Pubkey,
+    admin_member: &Pubkey,
+    mint: &Pubkey,
+    vault_id: u64,
+) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+    let program_id = solana_payout_platform::ID;
+
+    let ix = initialize_vault_ix(
+        &program_id,
+        &authority.pubkey(),
+        organization,
+        admin_member,
+        mint,
+        vault_id,
+    );
+
+    let payer = authority.pubkey();
+    let signer = authority.signer();
+
+    execute_transaction(svm, &payer, &[signer], &[ix])
 }

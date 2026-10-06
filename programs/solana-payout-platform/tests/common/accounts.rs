@@ -1,6 +1,6 @@
 use anchor_lang::AccountDeserialize;
 use litesvm::LiteSVM;
-use solana_payout_platform::{ApprovalPolicyVersion, Member, MemberWallet, Organization};
+use solana_payout_platform::{ApprovalPolicyVersion, Member, MemberWallet, Organization, VaultState};
 use solana_pubkey::Pubkey;
 
 pub fn organization(svm: &LiteSVM, organization: &Pubkey) -> Organization {
@@ -39,4 +39,14 @@ pub fn approval_policy_version(svm: &LiteSVM, policy_version: &Pubkey) -> Approv
     let mut data: &[u8] = &account.data;
 
     ApprovalPolicyVersion::try_deserialize(&mut data).unwrap()
+}
+
+pub fn get_vault_state(svm: &LiteSVM, vault_state: &Pubkey) -> VaultState {
+    let account = svm
+        .get_account(vault_state)
+        .expect("VaultState account not found");
+
+    let mut data: &[u8] = &account.data;
+
+    VaultState::try_deserialize(&mut data).unwrap()
 }
