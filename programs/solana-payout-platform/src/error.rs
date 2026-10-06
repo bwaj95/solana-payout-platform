@@ -49,4 +49,37 @@ pub enum ErrorCode {
 
     #[msg("Vault id must be greater than zero")]
     InvalidVaultId,
+
+    #[msg("The organization is paused")]
+    OrganizationPaused,
+
+    #[msg("The member must be an admin or preparer")]
+    MissingRecipientRegistrarRole,
+
+    #[msg("Recipient id must be greater than zero")]
+    InvalidRecipientId,
+
+    #[msg("Recipient destination cannot be the default public key")]
+    InvalidRecipientDestination,
+
+    #[msg("The vault does not belong to this organization")]
+    VaultOrganizationMismatch,
+
+    #[msg("The vault is inactive")]
+    InactiveVault,
+
+    #[msg("The vault does not support SPL token recipients")]
+    UnsupportedVaultAsset,
+
+    #[msg("The supplied mint does not match the vault mint")]
+    VaultMintMismatch,
+
+    #[msg("The destination token account has the wrong mint")]
+    RecipientTokenMintMismatch,
+
+    #[msg("The destination token account has the wrong authority")]
+    RecipientTokenOwnerMismatch,
+
+    #[msg("The supplied token account is not the canonical destination ATA")]
+    InvalidRecipientTokenAccount,
 }

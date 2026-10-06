@@ -69,3 +69,14 @@ pub struct VaultState {
     pub active: bool,
     pub bump: u8,
 }
+
+#[account]
+#[derive(InitSpace)]
+pub struct Recipient {
+    pub organization: Pubkey,
+    pub recipient_id: u64,
+    pub current_destination: Pubkey,
+    pub wallet_revision: u32,
+    pub active: bool,
+    pub bump: u8,
+}

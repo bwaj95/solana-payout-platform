@@ -1,6 +1,8 @@
 use anchor_lang::AccountDeserialize;
 use litesvm::LiteSVM;
-use solana_payout_platform::{ApprovalPolicyVersion, Member, MemberWallet, Organization, VaultState};
+use solana_payout_platform::{
+    ApprovalPolicyVersion, Member, MemberWallet, Organization, VaultState,
+};
 use solana_pubkey::Pubkey;
 
 pub fn organization(svm: &LiteSVM, organization: &Pubkey) -> Organization {

@@ -52,4 +52,16 @@ pub mod solana_payout_platform {
     pub fn initialize_vault(ctx: Context<InitializeVault>, vault_id: u64) -> Result<()> {
         instructions::initialize_vault::initialize_vault_handler(ctx, vault_id)
     }
+
+    pub fn register_recipient(
+        ctx: Context<RegisterRecipient>,
+        recipient_id: u64,
+        destination_wallet: Pubkey,
+    ) -> Result<()> {
+        instructions::register_recipient::register_recipient_handler(
+            ctx,
+            recipient_id,
+            destination_wallet,
+        )
+    }
 }

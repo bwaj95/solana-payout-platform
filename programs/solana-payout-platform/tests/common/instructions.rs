@@ -2,11 +2,15 @@ use anchor_lang::{
     solana_program::instruction::AccountMeta, system_program, InstructionData, ToAccountMetas,
 };
 use solana_message::Instruction;
-use solana_payout_platform::{accounts::{self, InitializeVault}, instruction};
+use solana_payout_platform::{
+    accounts::{self, InitializeVault},
+    instruction,
+};
 use solana_pubkey::Pubkey;
 
 use crate::common::pda::{
-    find_member_pda, find_member_wallet_pda, find_organization_pda, find_policy_version_pda, find_vault_state_pda, find_vault_token_account,
+    find_member_pda, find_member_wallet_pda, find_organization_pda, find_policy_version_pda,
+    find_vault_state_pda, find_vault_token_account,
 };
 
 pub fn initialize_organization_ix(
@@ -139,7 +143,6 @@ pub fn create_policy_version_ix(
         .data(),
     }
 }
-
 
 pub fn initialize_vault_ix(
     program_id: &Pubkey,

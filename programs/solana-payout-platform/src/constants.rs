@@ -6,8 +6,10 @@ pub const ORGANIZATION_SEED: &[u8] = b"organization";
 pub const MEMBER_SEED: &[u8] = b"member";
 pub const MEMBER_WALLET_SEED: &[u8] = b"member_wallet";
 pub const VAULT_SEED: &[u8] = b"vault";
+pub const RECIPIENT_SEED: &[u8] = b"recipient";
 
 pub const INITIAL_AUTHORIZATION_REVISION: u64 = 1;
+pub const INITIAL_RECIPIENT_WALLET_REVISION: u32 = 1;
 
 // A bitmask lets one Member hold multiple roles without storing a variable-length vector.
 pub const ROLE_OWNER: u16 = 1 << 0;
