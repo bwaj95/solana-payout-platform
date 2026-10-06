@@ -23,6 +23,7 @@ custom-panic = []
 [dependencies]
 anchor-lang = "1.0.2"
 anchor-spl = "1.2.1"
+solana-sha256-hasher = "3.0.0"
 
 [dev-dependencies]
 litesvm = "0.10.0"
@@ -31,6 +32,8 @@ solana-transaction = "3.0.2"
 solana-signer = "3.0.0"
 solana-keypair = "3.0.1"
 solana-pubkey = "4.4.0"
+solana-sha256-hasher = "3.0.0"
+solana-account = "3.2.0"
 
 
 [lints.rust]

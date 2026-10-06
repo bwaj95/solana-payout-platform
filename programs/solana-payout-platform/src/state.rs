@@ -80,3 +80,70 @@ pub struct Recipient {
     pub active: bool,
     pub bump: u8,
 }
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq, InitSpace)]
+pub enum PaymentState {
+    PendingApproval,
+    AwaitingFunds,
+    Approved,
+    Paid,
+    Cancelled,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq, InitSpace)]
+pub enum ReservationState {
+    None,
+    Held,
+    Consumed,
+    Released,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq, InitSpace)]
+pub enum SettlementRail {
+    PublicSol,
+    PublicSpl,
+    PrivateMagicBlock,
+}
+
+impl SettlementRail {
+    // Explicit hash tags prevent the hash format from depending implicitly
+    // on how Anchor serializes enum variants.
+    pub fn hash_tag(self) -> u8 {
+        match self {
+            Self::PublicSol => 0,
+            Self::PublicSpl => 1,
+            Self::PrivateMagicBlock => 2,
+        }
+    }
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct Payment {
+    pub organization: Pubkey,
+    pub payment_id: u64,
+
+    // Stable Member PDA, not the authority wallet.
+    pub created_by: Pubkey,
+
+    pub recipient: Pubkey,
+    pub destination: Pubkey,
+    pub recipient_wallet_revision: u32,
+
+    pub vault: Pubkey,
+    pub amount: u64,
+
+    // Exact immutable ApprovalPolicyVersion PDA.
+    pub policy_version: Pubkey,
+
+    pub payment_revision: u32,
+    pub settlement_rail: SettlementRail,
+    pub execute_after: i64,
+
+    pub terms_hash: [u8; 32],
+
+    pub payment_state: PaymentState,
+    pub reservation_state: ReservationState,
+
+    pub bump: u8,
+}

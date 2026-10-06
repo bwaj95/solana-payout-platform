@@ -2,12 +2,14 @@ pub mod constants;
 pub mod error;
 pub mod events;
 pub mod instructions;
+pub mod payment_terms;
 pub mod state;
 
 use anchor_lang::prelude::*;
 
 pub use constants::*;
 pub use instructions::*;
+pub use payment_terms::*;
 pub use state::*;
 
 declare_id!("5SWH7YmBC7Tiri1MQLDbnWc1yTn3QqYBC1g9H3mZgbhv");
@@ -63,5 +65,14 @@ pub mod solana_payout_platform {
             recipient_id,
             destination_wallet,
         )
+    }
+
+    pub fn create_payment(
+        ctx: Context<CreatePayment>,
+        payment_id: u64,
+        amount: u64,
+        execute_after: i64,
+    ) -> Result<()> {
+        instructions::create_payment::create_payment_handler(ctx, payment_id, amount, execute_after)
     }
 }

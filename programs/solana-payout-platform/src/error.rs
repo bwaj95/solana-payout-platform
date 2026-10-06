@@ -82,4 +82,28 @@ pub enum ErrorCode {
 
     #[msg("The supplied token account is not the canonical destination ATA")]
     InvalidRecipientTokenAccount,
+
+    #[msg("Payment id must be greater than zero")]
+    InvalidPaymentId,
+
+    #[msg("Payment amount must be greater than zero")]
+    InvalidPaymentAmount,
+
+    #[msg("Execute-after timestamp cannot be negative")]
+    InvalidExecuteAfter,
+
+    #[msg("The member must be an administrator or preparer")]
+    MissingPaymentCreatorRole,
+
+    #[msg("The recipient does not belong to this organization")]
+    RecipientOrganizationMismatch,
+
+    #[msg("The recipient is inactive")]
+    InactiveRecipient,
+
+    #[msg("The policy does not belong to this organization")]
+    PolicyOrganizationMismatch,
+
+    #[msg("The policy version is inactive")]
+    InactivePolicy,
 }

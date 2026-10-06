@@ -7,9 +7,11 @@ pub const MEMBER_SEED: &[u8] = b"member";
 pub const MEMBER_WALLET_SEED: &[u8] = b"member_wallet";
 pub const VAULT_SEED: &[u8] = b"vault";
 pub const RECIPIENT_SEED: &[u8] = b"recipient";
+pub const PAYMENT_SEED: &[u8] = b"payment";
 
 pub const INITIAL_AUTHORIZATION_REVISION: u64 = 1;
 pub const INITIAL_RECIPIENT_WALLET_REVISION: u32 = 1;
+pub const INITIAL_PAYMENT_REVISION: u32 = 1;
 
 // A bitmask lets one Member hold multiple roles without storing a variable-length vector.
 pub const ROLE_OWNER: u16 = 1 << 0;
@@ -30,3 +32,7 @@ pub const POLICY_SEED: &[u8] = b"policy";
 
 // For each approval we need to provide the Member-Approval account pair. 8 is a reasonable upper bound.
 pub const MAX_POLICY_MEMBERS: u8 = 8;
+
+// Never change this after approvals have been created.
+// It prevents this hash from being confused with another hash used elsewhere.
+pub const PAYMENT_TERMS_DOMAIN: &[u8] = b"solana-payout-platform:payment-terms:v1";

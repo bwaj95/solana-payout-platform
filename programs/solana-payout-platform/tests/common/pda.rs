@@ -1,5 +1,6 @@
 use solana_payout_platform::{
-    MEMBER_SEED, MEMBER_WALLET_SEED, ORGANIZATION_SEED, POLICY_SEED, VAULT_SEED,
+    MEMBER_SEED, MEMBER_WALLET_SEED, ORGANIZATION_SEED, PAYMENT_SEED, POLICY_SEED, RECIPIENT_SEED,
+    VAULT_SEED,
 };
 use solana_pubkey::Pubkey;
 
@@ -86,4 +87,62 @@ pub fn find_vault_token_account(vault_state: &Pubkey, mint: &Pubkey) -> Pubkey {
         &anchor_spl::associated_token::ID,
     )
     .0
+}
+
+pub fn find_policy_pda(
+    program_id: &Pubkey,
+    organization: &Pubkey,
+    policy_id: u64,
+    version: u64,
+) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[
+            POLICY_SEED,
+            organization.as_ref(),
+            policy_id.to_le_bytes().as_ref(),
+            version.to_le_bytes().as_ref(),
+        ],
+        program_id,
+    )
+}
+
+pub fn find_vault_pda(program_id: &Pubkey, organization: &Pubkey, vault_id: u64) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[
+            VAULT_SEED,
+            organization.as_ref(),
+            vault_id.to_le_bytes().as_ref(),
+        ],
+        program_id,
+    )
+}
+
+pub fn find_recipient_pda(
+    program_id: &Pubkey,
+    organization: &Pubkey,
+    recipient_id: u64,
+) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[
+            RECIPIENT_SEED,
+            organization.as_ref(),
+            recipient_id.to_le_bytes().as_ref(),
+        ],
+        program_id,
+    )
+}
+
+pub fn find_payment_pda(
+    program_id: &Pubkey,
+    organization: &Pubkey,
+    payment_id: u64,
+) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[
+            PAYMENT_SEED,
+            organization.as_ref(),
+            payment_id.to_le_bytes().as_ref(),
+        ],
+        program_id,
+    )
 }

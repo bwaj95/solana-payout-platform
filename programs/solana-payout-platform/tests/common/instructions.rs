@@ -3,7 +3,7 @@ use anchor_lang::{
 };
 use solana_message::Instruction;
 use solana_payout_platform::{
-    accounts::{self, InitializeVault},
+    accounts::{self, CreatePayment, InitializeVault},
     instruction,
 };
 use solana_pubkey::Pubkey;
@@ -173,5 +173,43 @@ pub fn initialize_vault_ix(
         program_id: *program_id,
         accounts,
         data: instruction::InitializeVault { vault_id }.data(),
+    }
+}
+
+pub fn create_payment_ix(
+    program_id: &Pubkey,
+    authority: &Pubkey,
+    organization: &Pubkey,
+    preparer_member: &Pubkey,
+    recipient: &Pubkey,
+    vault: &Pubkey,
+    approval_policy_version: &Pubkey,
+    payment_id: u64,
+    amount: u64,
+    execute_after: i64,
+) -> Instruction {
+    let (payment, _) = crate::common::pda::find_payment_pda(program_id, organization, payment_id);
+
+    let accounts = CreatePayment {
+        authority: *authority,
+        organization: *organization,
+        preparer_member: *preparer_member,
+        recipient: *recipient,
+        vault_state: *vault,
+        approval_policy_version: *approval_policy_version,
+        payment,
+        system_program: system_program::ID,
+    }
+    .to_account_metas(None);
+
+    Instruction {
+        program_id: *program_id,
+        accounts,
+        data: instruction::CreatePayment {
+            payment_id,
+            amount,
+            execute_after,
+        }
+        .data(),
     }
 }

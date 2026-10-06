@@ -9,7 +9,8 @@ use solana_transaction::versioned::VersionedTransaction;
 
 use crate::common::{
     instructions::{
-        create_member_ix, create_policy_version_ix, initialize_organization_ix, initialize_vault_ix,
+        create_member_ix, create_payment_ix, create_policy_version_ix, initialize_organization_ix,
+        initialize_vault_ix,
     },
     users::User,
 };
@@ -119,4 +120,36 @@ pub fn initialize_vault(
     let signer = authority.signer();
 
     execute_transaction(svm, &payer, &[signer], &[ix])
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn create_payment(
+    program_id: &Pubkey,
+    svm: &mut LiteSVM,
+    authority: &User,
+    organization: &Pubkey,
+    preparer_member: &Pubkey,
+    recipient: &Pubkey,
+    vault: &Pubkey,
+    approval_policy_version: &Pubkey,
+    payment_id: u64,
+    amount: u64,
+    execute_after: i64,
+) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+    let ix = create_payment_ix(
+        program_id,
+        &authority.pubkey(),
+        organization,
+        preparer_member,
+        recipient,
+        vault,
+        approval_policy_version,
+        payment_id,
+        amount,
+        execute_after,
+    );
+
+    let payer = authority.pubkey();
+
+    execute_transaction(svm, &payer, &[authority.signer()], &[ix])
 }
