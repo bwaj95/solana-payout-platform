@@ -106,4 +106,52 @@ pub enum ErrorCode {
 
     #[msg("The policy version is inactive")]
     InactivePolicy,
+
+    #[msg("The member must be an administrator or approver")]
+    MissingPaymentApproverRole,
+
+    #[msg("The member does not have permission to finalize payment approval")]
+    MissingPaymentFinalizerRole,
+
+    #[msg("The vault doesn't have enough balance to cover the payment")]
+    InsufficientVaultBalance,
+
+    #[msg("The payment terms don't match")]
+    PaymentTermsMismatch,
+
+    #[msg("The payment is not accepting approvals")]
+    PaymentNotAcceptingApprovals,
+
+    #[msg("The payment has an invalid reservation state for approval")]
+    InvalidPaymentReservationState,
+
+    #[msg("The member is not an eligible approver for this policy version")]
+    ApproverNotEligibleForPolicy,
+
+    #[msg("The payment settlement rail is not supported")]
+    UnsupportedSettlementRail,
+
+    #[msg("Remaining approval accounts must be Approval and Member pairs")]
+    InvalidRemainingApprovalAccounts,
+
+    #[msg("Too many approval witness accounts were supplied")]
+    TooManyApprovalAccounts,
+
+    #[msg("The supplied Approval account is invalid")]
+    InvalidApprovalAccount,
+
+    #[msg("The supplied Member account is invalid")]
+    InvalidMemberAccount,
+
+    #[msg("The same member cannot be counted more than once")]
+    DuplicateApprovalMember,
+
+    #[msg("The valid approval count has not reached the policy threshold")]
+    ApprovalThresholdNotMet,
+
+    #[msg("The vault reserved total exceeds its token balance")]
+    VaultReservationInvariantViolation,
+
+    #[msg("Arithmetic overflow")]
+    ArithmeticOverflow,
 }

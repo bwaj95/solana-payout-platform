@@ -146,3 +146,27 @@ pub fn find_payment_pda(
         program_id,
     )
 }
+
+use solana_payout_platform::APPROVAL_SEED;
+
+#[allow(clippy::too_many_arguments)]
+pub fn find_approval_pda(
+    program_id: &Pubkey,
+    organization: &Pubkey,
+    payment_id: u64,
+    payment_revision: u32,
+    member_id: u64,
+    member_authorization_revision: u64,
+) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[
+            APPROVAL_SEED,
+            organization.as_ref(),
+            payment_id.to_le_bytes().as_ref(),
+            payment_revision.to_le_bytes().as_ref(),
+            member_id.to_le_bytes().as_ref(),
+            member_authorization_revision.to_le_bytes().as_ref(),
+        ],
+        program_id,
+    )
+}

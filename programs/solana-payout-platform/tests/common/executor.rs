@@ -7,6 +7,7 @@ use solana_pubkey::Pubkey;
 use solana_signer::Signer;
 use solana_transaction::versioned::VersionedTransaction;
 
+use crate::common::instructions::{approve_payment_ix, finalize_payment_approval_ix};
 use crate::common::{
     instructions::{
         create_member_ix, create_payment_ix, create_policy_version_ix, initialize_organization_ix,
@@ -152,4 +153,74 @@ pub fn create_payment(
     let payer = authority.pubkey();
 
     execute_transaction(svm, &payer, &[authority.signer()], &[ix])
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn approve_payment(
+    program_id: &Pubkey,
+    svm: &mut LiteSVM,
+    authority: &User,
+    organization: &Pubkey,
+    approver_member: &Pubkey,
+    vault_state: &Pubkey,
+    mint: &Pubkey,
+    vault_ata: &Pubkey,
+    recipient: &Pubkey,
+    approval_policy_version: &Pubkey,
+    payment: &Pubkey,
+    approval: &Pubkey,
+    payment_id: u64,
+    witnesses: &[(Pubkey, Pubkey)],
+) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+    let ix = approve_payment_ix(
+        program_id,
+        &authority.pubkey(),
+        organization,
+        approver_member,
+        vault_state,
+        mint,
+        vault_ata,
+        recipient,
+        approval_policy_version,
+        payment,
+        approval,
+        payment_id,
+        witnesses,
+    );
+
+    execute_transaction(svm, &authority.pubkey(), &[authority.signer()], &[ix])
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn finalize_payment_approval(
+    program_id: &Pubkey,
+    svm: &mut LiteSVM,
+    authority: &User,
+    organization: &Pubkey,
+    finalizer_member: &Pubkey,
+    vault_state: &Pubkey,
+    mint: &Pubkey,
+    vault_ata: &Pubkey,
+    recipient: &Pubkey,
+    approval_policy_version: &Pubkey,
+    payment: &Pubkey,
+    payment_id: u64,
+    witnesses: &[(Pubkey, Pubkey)],
+) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+    let ix = finalize_payment_approval_ix(
+        program_id,
+        &authority.pubkey(),
+        organization,
+        finalizer_member,
+        vault_state,
+        mint,
+        vault_ata,
+        recipient,
+        approval_policy_version,
+        payment,
+        payment_id,
+        witnesses,
+    );
+
+    execute_transaction(svm, &authority.pubkey(), &[authority.signer()], &[ix])
 }

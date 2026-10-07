@@ -6,23 +6,32 @@ use litesvm::{
 };
 use solana_pubkey::Pubkey;
 
-use crate::common::users::User;
+use crate::common::{pda::find_payment_pda, users::User};
 use anchor_lang::AccountSerialize;
 use solana_account::Account;
 use solana_payout_platform::{
-    compute_payment_terms_hash, ApprovalPolicyVersion, Asset, Member, Organization, Recipient,
-    SettlementRail, VaultState, INITIAL_AUTHORIZATION_REVISION, INITIAL_RECIPIENT_WALLET_REVISION,
-    ROLE_PREPARER,
+    compute_payment_terms_hash, Approval, ApprovalPolicyVersion, Asset, Member, Organization,
+    Payment, PaymentState, Recipient, ReservationState, SettlementRail, VaultState,
+    INITIAL_AUTHORIZATION_REVISION, INITIAL_PAYMENT_REVISION, INITIAL_RECIPIENT_WALLET_REVISION,
+    ROLE_ADMIN, ROLE_APPROVER, ROLE_PREPARER,
 };
 
 use crate::common::pda::{
-    find_member_pda, find_organization_pda, find_policy_pda, find_recipient_pda, find_vault_pda,
+    find_approval_pda, find_member_pda, find_organization_pda, find_policy_pda, find_recipient_pda,
+    find_vault_pda,
 };
 
 use crate::common::{
     accounts::{approval_policy_version, member, organization, recipient, vault_state},
     executor::create_payment,
 };
+
+use crate::common::executor::{
+    approve_payment as execute_approve_payment,
+    finalize_payment_approval as execute_finalize_payment_approval,
+};
+
+use crate::common::accounts::{approval as load_approval, payment as load_payment};
 
 pub const HUNDRED_SOL: u64 = 100_000_000_000u64;
 
@@ -314,5 +323,531 @@ pub fn setup_create_payment_fixture() -> CreatePaymentFixture {
         payment_id,
         amount,
         execute_after,
+    }
+}
+
+const TEST_USDC_DECIMALS: u8 = 6;
+const TEST_VAULT_BALANCE: u64 = 10_000_000;
+const TEST_PAYMENT_AMOUNT: u64 = 2_000_000;
+
+pub struct TestApprover {
+    pub user: User,
+    pub member: Pubkey,
+    pub member_id: u64,
+    pub authorization_revision: u64,
+}
+
+pub struct ApprovalFixture {
+    pub svm: LiteSVM,
+
+    pub finalizer: User,
+    pub finalizer_member: Pubkey,
+
+    pub organization: Pubkey,
+    pub approvers: Vec<TestApprover>,
+
+    pub recipient: Pubkey,
+    pub vault_state: Pubkey,
+    pub mint: Pubkey,
+    pub vault_ata: Pubkey,
+
+    pub approval_policy_version: Pubkey,
+    pub payment: Pubkey,
+
+    pub payment_id: u64,
+    pub payment_revision: u32,
+    pub payment_amount: u64,
+}
+
+impl ApprovalFixture {
+    pub fn approval_pda(&self, approver_index: usize) -> Pubkey {
+        let approver = &self.approvers[approver_index];
+
+        find_approval_pda(
+            &solana_payout_platform::ID,
+            &self.organization,
+            self.payment_id,
+            self.payment_revision,
+            approver.member_id,
+            approver.authorization_revision,
+        )
+        .0
+    }
+
+    pub fn approval_witnesses(&self, approver_indices: &[usize]) -> Vec<(Pubkey, Pubkey)> {
+        approver_indices
+            .iter()
+            .map(|index| {
+                let approver = &self.approvers[*index];
+
+                (self.approval_pda(*index), approver.member)
+            })
+            .collect()
+    }
+
+    pub fn approve(
+        &mut self,
+        approver_index: usize,
+        previous_approver_indices: &[usize],
+    ) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+        let witnesses = self.approval_witnesses(previous_approver_indices);
+
+        let approval = self.approval_pda(approver_index);
+        let approver = &self.approvers[approver_index];
+
+        execute_approve_payment(
+            &solana_payout_platform::ID,
+            &mut self.svm,
+            &approver.user,
+            &self.organization,
+            &approver.member,
+            &self.vault_state,
+            &self.mint,
+            &self.vault_ata,
+            &self.recipient,
+            &self.approval_policy_version,
+            &self.payment,
+            &approval,
+            self.payment_id,
+            &witnesses,
+        )
+    }
+
+    pub fn finalize(
+        &mut self,
+        approved_member_indices: &[usize],
+    ) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+        let witnesses = self.approval_witnesses(approved_member_indices);
+
+        execute_finalize_payment_approval(
+            &solana_payout_platform::ID,
+            &mut self.svm,
+            &self.finalizer,
+            &self.organization,
+            &self.finalizer_member,
+            &self.vault_state,
+            &self.mint,
+            &self.vault_ata,
+            &self.recipient,
+            &self.approval_policy_version,
+            &self.payment,
+            self.payment_id,
+            &witnesses,
+        )
+    }
+
+    pub fn set_vault_token_balance(&mut self, amount: u64) {
+        store_test_token_account(
+            &mut self.svm,
+            &self.vault_ata,
+            &self.mint,
+            &self.vault_state,
+            amount,
+        );
+    }
+
+    pub fn update_approver_member<F>(&mut self, approver_index: usize, update: F)
+    where
+        F: FnOnce(&mut Member),
+    {
+        let member_address = self.approvers[approver_index].member;
+
+        let mut member_account = member(&self.svm, &member_address);
+
+        update(&mut member_account);
+
+        store_anchor_account(&mut self.svm, &member_address, &member_account);
+    }
+
+    pub fn update_policy<F>(&mut self, update: F)
+    where
+        F: FnOnce(&mut ApprovalPolicyVersion),
+    {
+        let mut policy = approval_policy_version(&self.svm, &self.approval_policy_version);
+
+        update(&mut policy);
+
+        store_anchor_account(&mut self.svm, &self.approval_policy_version, &policy);
+    }
+
+    pub fn update_recipient<F>(&mut self, update: F)
+    where
+        F: FnOnce(&mut Recipient),
+    {
+        let mut recipient_account = recipient(&self.svm, &self.recipient);
+
+        update(&mut recipient_account);
+
+        store_anchor_account(&mut self.svm, &self.recipient, &recipient_account);
+    }
+
+    pub fn update_vault<F>(&mut self, update: F)
+    where
+        F: FnOnce(&mut VaultState),
+    {
+        let mut vault = vault_state(&self.svm, &self.vault_state);
+
+        update(&mut vault);
+
+        store_anchor_account(&mut self.svm, &self.vault_state, &vault);
+    }
+
+    pub fn update_payment<F>(&mut self, update: F)
+    where
+        F: FnOnce(&mut Payment),
+    {
+        let mut payment = load_payment(&self.svm, &self.payment);
+
+        update(&mut payment);
+
+        store_anchor_account(&mut self.svm, &self.payment, &payment);
+    }
+
+    pub fn update_approval<F>(&mut self, approver_index: usize, update: F)
+    where
+        F: FnOnce(&mut Approval),
+    {
+        let approval_address = self.approval_pda(approver_index);
+
+        let mut approval = load_approval(&self.svm, &approval_address);
+
+        update(&mut approval);
+
+        store_anchor_account(&mut self.svm, &approval_address, &approval);
+    }
+
+    pub fn finalize_with_witnesses(
+        &mut self,
+        witnesses: &[(Pubkey, Pubkey)],
+    ) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+        execute_finalize_payment_approval(
+            &solana_payout_platform::ID,
+            &mut self.svm,
+            &self.finalizer,
+            &self.organization,
+            &self.finalizer_member,
+            &self.vault_state,
+            &self.mint,
+            &self.vault_ata,
+            &self.recipient,
+            &self.approval_policy_version,
+            &self.payment,
+            self.payment_id,
+            witnesses,
+        )
+    }
+}
+
+fn find_test_ata(owner: &Pubkey, mint: &Pubkey) -> Pubkey {
+    /*
+     * Legacy ATA seeds:
+     *
+     * owner, SPL Token Program, mint
+     */
+    Pubkey::find_program_address(
+        &[
+            owner.as_ref(),
+            anchor_spl::token::ID.as_ref(),
+            mint.as_ref(),
+        ],
+        &anchor_spl::associated_token::ID,
+    )
+    .0
+}
+
+fn store_test_mint(svm: &mut LiteSVM, mint: &Pubkey, decimals: u8) {
+    /*
+     * Legacy SPL Mint layout:
+     *
+     * mint_authority: 36 bytes
+     * supply:          8 bytes
+     * decimals:        1 byte
+     * initialized:     1 byte
+     * freeze_authority:36 bytes
+     *
+     * Total: 82 bytes
+     */
+    let mut data = vec![0u8; 82];
+
+    data[36..44].copy_from_slice(&0u64.to_le_bytes());
+    data[44] = decimals;
+    data[45] = 1; // is_initialized = true
+
+    svm.set_account(
+        *mint,
+        Account {
+            lamports: TEST_ACCOUNT_LAMPORTS,
+            data,
+            owner: anchor_spl::token::ID,
+            executable: false,
+            rent_epoch: 0,
+        },
+    )
+    .unwrap();
+}
+
+fn store_test_token_account(
+    svm: &mut LiteSVM,
+    address: &Pubkey,
+    mint: &Pubkey,
+    token_owner: &Pubkey,
+    amount: u64,
+) {
+    /*
+     * Legacy SPL Token Account layout:
+     *
+     * mint:             bytes 0..32
+     * owner:            bytes 32..64
+     * amount:           bytes 64..72
+     * delegate:         bytes 72..108
+     * state:            byte 108
+     * is_native:        bytes 109..121
+     * delegated_amount: bytes 121..129
+     * close_authority:  bytes 129..165
+     */
+    let mut data = vec![0u8; 165];
+
+    data[0..32].copy_from_slice(mint.as_ref());
+    data[32..64].copy_from_slice(token_owner.as_ref());
+    data[64..72].copy_from_slice(&amount.to_le_bytes());
+
+    // AccountState::Initialized
+    data[108] = 1;
+
+    svm.set_account(
+        *address,
+        Account {
+            lamports: TEST_ACCOUNT_LAMPORTS,
+            data,
+            owner: anchor_spl::token::ID,
+            executable: false,
+            rent_epoch: 0,
+        },
+    )
+    .unwrap();
+}
+
+pub fn setup_approval_fixture() -> ApprovalFixture {
+    let program_id = solana_payout_platform::ID;
+    let (mut svm, mut users) = setup_test_context(&program_id);
+
+    let finalizer = users.remove("creator").expect("creator user must exist");
+
+    let alice = users.remove("alice").expect("alice user must exist");
+
+    let bob = users.remove("bob").expect("bob user must exist");
+
+    let carol = users.remove("carol").expect("carol user must exist");
+
+    let organization_id = 1;
+    let finalizer_member_id = 1;
+    let alice_member_id = 2;
+    let bob_member_id = 3;
+    let carol_member_id = 4;
+
+    let recipient_id = 1;
+    let vault_id = 1;
+    let policy_id = 1;
+    let policy_version = 1;
+    let payment_id = 1;
+
+    let (organization, organization_bump) =
+        find_organization_pda(&program_id, &finalizer.pubkey(), organization_id);
+
+    let (finalizer_member, finalizer_member_bump) =
+        find_member_pda(&program_id, &organization, finalizer_member_id);
+
+    let (alice_member, alice_member_bump) =
+        find_member_pda(&program_id, &organization, alice_member_id);
+
+    let (bob_member, bob_member_bump) = find_member_pda(&program_id, &organization, bob_member_id);
+
+    let (carol_member, carol_member_bump) =
+        find_member_pda(&program_id, &organization, carol_member_id);
+
+    let (recipient, recipient_bump) = find_recipient_pda(&program_id, &organization, recipient_id);
+
+    let (vault_state, vault_bump) = find_vault_pda(&program_id, &organization, vault_id);
+
+    let (approval_policy_version, policy_bump) =
+        find_policy_pda(&program_id, &organization, policy_id, policy_version);
+
+    let (payment, payment_bump) = find_payment_pda(&program_id, &organization, payment_id);
+
+    let mint = Pubkey::new_unique();
+    let destination = Pubkey::new_unique();
+    let vault_ata = find_test_ata(&vault_state, &mint);
+
+    store_anchor_account(
+        &mut svm,
+        &organization,
+        &Organization {
+            organization_id,
+            creator: finalizer.pubkey(),
+            owner_member: finalizer_member,
+            paused: false,
+            bump: organization_bump,
+        },
+    );
+
+    store_anchor_account(
+        &mut svm,
+        &finalizer_member,
+        &Member {
+            organization,
+            member_id: finalizer_member_id,
+            authorized_wallet: finalizer.pubkey(),
+            authorization_revision: INITIAL_AUTHORIZATION_REVISION,
+            roles: ROLE_ADMIN,
+            active: true,
+            bump: finalizer_member_bump,
+        },
+    );
+
+    let test_approvers = [
+        (&alice, alice_member, alice_member_id, alice_member_bump),
+        (&bob, bob_member, bob_member_id, bob_member_bump),
+        (&carol, carol_member, carol_member_id, carol_member_bump),
+    ];
+
+    for (user, member, member_id, bump) in test_approvers {
+        store_anchor_account(
+            &mut svm,
+            &member,
+            &Member {
+                organization,
+                member_id,
+                authorized_wallet: user.pubkey(),
+                authorization_revision: INITIAL_AUTHORIZATION_REVISION,
+                roles: ROLE_APPROVER,
+                active: true,
+                bump,
+            },
+        );
+    }
+
+    store_anchor_account(
+        &mut svm,
+        &recipient,
+        &Recipient {
+            organization,
+            recipient_id,
+            current_destination: destination,
+            wallet_revision: INITIAL_RECIPIENT_WALLET_REVISION,
+            active: true,
+            bump: recipient_bump,
+        },
+    );
+
+    store_anchor_account(
+        &mut svm,
+        &vault_state,
+        &VaultState {
+            organization,
+            vault_id,
+            asset: Asset::Spl { mint },
+            reserved_total: 0,
+            active: true,
+            bump: vault_bump,
+        },
+    );
+
+    store_anchor_account(
+        &mut svm,
+        &approval_policy_version,
+        &ApprovalPolicyVersion {
+            organization,
+            policy_id,
+            version: policy_version,
+            created_by_member: finalizer_member,
+            eligible_members: vec![alice_member, bob_member, carol_member],
+            threshold: 2,
+            enabled: true,
+            bump: policy_bump,
+        },
+    );
+
+    let terms_hash = compute_payment_terms_hash(
+        &organization,
+        payment_id,
+        INITIAL_PAYMENT_REVISION,
+        &recipient,
+        &destination,
+        INITIAL_RECIPIENT_WALLET_REVISION,
+        &vault_state,
+        &mint,
+        TEST_PAYMENT_AMOUNT,
+        &approval_policy_version,
+        SettlementRail::PublicSpl,
+        0,
+    );
+
+    store_anchor_account(
+        &mut svm,
+        &payment,
+        &Payment {
+            organization,
+            payment_id,
+            created_by: finalizer_member,
+            recipient,
+            destination,
+            recipient_wallet_revision: INITIAL_RECIPIENT_WALLET_REVISION,
+            vault: vault_state,
+            amount: TEST_PAYMENT_AMOUNT,
+            policy_version: approval_policy_version,
+            payment_revision: INITIAL_PAYMENT_REVISION,
+            settlement_rail: SettlementRail::PublicSpl,
+            execute_after: 0,
+            terms_hash,
+            payment_state: PaymentState::PendingApproval,
+            reservation_state: ReservationState::None,
+            bump: payment_bump,
+        },
+    );
+
+    store_test_mint(&mut svm, &mint, TEST_USDC_DECIMALS);
+
+    store_test_token_account(
+        &mut svm,
+        &vault_ata,
+        &mint,
+        &vault_state,
+        TEST_VAULT_BALANCE,
+    );
+
+    ApprovalFixture {
+        svm,
+        finalizer,
+        finalizer_member,
+        organization,
+        approvers: vec![
+            TestApprover {
+                user: alice,
+                member: alice_member,
+                member_id: alice_member_id,
+                authorization_revision: INITIAL_AUTHORIZATION_REVISION,
+            },
+            TestApprover {
+                user: bob,
+                member: bob_member,
+                member_id: bob_member_id,
+                authorization_revision: INITIAL_AUTHORIZATION_REVISION,
+            },
+            TestApprover {
+                user: carol,
+                member: carol_member,
+                member_id: carol_member_id,
+                authorization_revision: INITIAL_AUTHORIZATION_REVISION,
+            },
+        ],
+        recipient,
+        vault_state,
+        mint,
+        vault_ata,
+        approval_policy_version,
+        payment,
+        payment_id,
+        payment_revision: INITIAL_PAYMENT_REVISION,
+        payment_amount: TEST_PAYMENT_AMOUNT,
     }
 }

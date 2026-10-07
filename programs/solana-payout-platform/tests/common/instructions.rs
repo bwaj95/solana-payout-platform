@@ -13,6 +13,8 @@ use crate::common::pda::{
     find_vault_state_pda, find_vault_token_account,
 };
 
+use solana_payout_platform::accounts::{ApprovePayment, FinalizePaymentApproval};
+
 pub fn initialize_organization_ix(
     program_id: &Pubkey,
     creator: &Pubkey,
@@ -211,5 +213,90 @@ pub fn create_payment_ix(
             execute_after,
         }
         .data(),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn approve_payment_ix(
+    program_id: &Pubkey,
+    authority: &Pubkey,
+    organization: &Pubkey,
+    approver_member: &Pubkey,
+    vault_state: &Pubkey,
+    mint: &Pubkey,
+    vault_ata: &Pubkey,
+    recipient: &Pubkey,
+    approval_policy_version: &Pubkey,
+    payment: &Pubkey,
+    approval: &Pubkey,
+    payment_id: u64,
+    witnesses: &[(Pubkey, Pubkey)],
+) -> Instruction {
+    let mut accounts = ApprovePayment {
+        authority: *authority,
+        organization: *organization,
+        approver_member: *approver_member,
+        vault_state: *vault_state,
+        mint: *mint,
+        vault_ata: *vault_ata,
+        recipient: *recipient,
+        approval_policy_version: *approval_policy_version,
+        payment: *payment,
+        approval: *approval,
+        system_program: system_program::ID,
+    }
+    .to_account_metas(None);
+
+    // remaining_accounts must be ordered as:
+    // approval_1, member_1, approval_2, member_2, ...
+    for (approval, member) in witnesses {
+        accounts.push(AccountMeta::new_readonly(*approval, false));
+        accounts.push(AccountMeta::new_readonly(*member, false));
+    }
+
+    Instruction {
+        program_id: *program_id,
+        accounts,
+        data: instruction::ApprovePayment { payment_id }.data(),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn finalize_payment_approval_ix(
+    program_id: &Pubkey,
+    authority: &Pubkey,
+    organization: &Pubkey,
+    finalizer_member: &Pubkey,
+    vault_state: &Pubkey,
+    mint: &Pubkey,
+    vault_ata: &Pubkey,
+    recipient: &Pubkey,
+    approval_policy_version: &Pubkey,
+    payment: &Pubkey,
+    payment_id: u64,
+    witnesses: &[(Pubkey, Pubkey)],
+) -> Instruction {
+    let mut accounts = FinalizePaymentApproval {
+        authority: *authority,
+        organization: *organization,
+        finalizer_member: *finalizer_member,
+        vault_state: *vault_state,
+        mint: *mint,
+        vault_ata: *vault_ata,
+        recipient: *recipient,
+        approval_policy_version: *approval_policy_version,
+        payment: *payment,
+    }
+    .to_account_metas(None);
+
+    for (approval, member) in witnesses {
+        accounts.push(AccountMeta::new_readonly(*approval, false));
+        accounts.push(AccountMeta::new_readonly(*member, false));
+    }
+
+    Instruction {
+        program_id: *program_id,
+        accounts,
+        data: instruction::FinalizePaymentApproval { payment_id }.data(),
     }
 }

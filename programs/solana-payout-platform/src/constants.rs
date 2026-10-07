@@ -8,6 +8,7 @@ pub const MEMBER_WALLET_SEED: &[u8] = b"member_wallet";
 pub const VAULT_SEED: &[u8] = b"vault";
 pub const RECIPIENT_SEED: &[u8] = b"recipient";
 pub const PAYMENT_SEED: &[u8] = b"payment";
+pub const APPROVAL_SEED: &[u8] = b"approval";
 
 pub const INITIAL_AUTHORIZATION_REVISION: u64 = 1;
 pub const INITIAL_RECIPIENT_WALLET_REVISION: u32 = 1;

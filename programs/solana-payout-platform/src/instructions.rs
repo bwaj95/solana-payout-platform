@@ -1,13 +1,18 @@
+mod approval_validation;
+pub mod approve_payment;
 pub mod create_member;
 pub mod create_payment;
 pub mod create_policy_version;
+pub mod finalize_payment_approval;
 pub mod initialize_organization;
 pub mod initialize_vault;
 pub mod register_recipient;
 
+pub use approve_payment::*;
 pub use create_member::*;
 pub use create_payment::*;
 pub use create_policy_version::*;
+pub use finalize_payment_approval::*;
 pub use initialize_organization::*;
 pub use initialize_vault::*;
 pub use register_recipient::*;

@@ -147,3 +147,21 @@ pub struct Payment {
 
     pub bump: u8,
 }
+
+#[account]
+#[derive(InitSpace)]
+pub struct Approval {
+    pub organization: Pubkey,
+    pub payment: Pubkey,
+    pub payment_revision: u32,
+    pub policy: Pubkey,
+
+    pub member: Pubkey,
+    pub member_authorization_revision: u64,
+    pub authorization_wallet: Pubkey,
+
+    pub approved_at: i64,
+    pub terms_hash: [u8; 32],
+
+    pub bump: u8,
+}

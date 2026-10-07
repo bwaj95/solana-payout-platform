@@ -75,4 +75,15 @@ pub mod solana_payout_platform {
     ) -> Result<()> {
         instructions::create_payment::create_payment_handler(ctx, payment_id, amount, execute_after)
     }
+
+    pub fn approve_payment(ctx: Context<ApprovePayment>, payment_id: u64) -> Result<()> {
+        instructions::approve_payment::approve_payment_handler(ctx, payment_id)
+    }
+
+    pub fn finalize_payment_approval(
+        ctx: Context<FinalizePaymentApproval>,
+        payment_id: u64,
+    ) -> Result<()> {
+        instructions::finalize_payment_approval::finalize_payment_approval_handler(ctx, payment_id)
+    }
 }

@@ -4,7 +4,7 @@ use anchor_spl::token::{Mint, TokenAccount};
 use crate::{
     error::ErrorCode, Asset, Member, Organization, Recipient, VaultState,
     INITIAL_RECIPIENT_WALLET_REVISION, MEMBER_SEED, ORGANIZATION_SEED, RECIPIENT_SEED, ROLE_ADMIN,
-    ROLE_OWNER, ROLE_PREPARER, VAULT_SEED,
+    ROLE_PREPARER, VAULT_SEED,
 };
 
 #[derive(Accounts)]
