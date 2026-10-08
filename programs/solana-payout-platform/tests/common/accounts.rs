@@ -1,4 +1,5 @@
 use anchor_lang::AccountDeserialize;
+use anchor_spl::token::TokenAccount;
 use litesvm::LiteSVM;
 use solana_payout_platform::{
     Approval, ApprovalPolicyVersion, Member, MemberWallet, Organization, Payment, Recipient,
@@ -90,4 +91,14 @@ pub fn approval(svm: &LiteSVM, address: &Pubkey) -> Approval {
     let mut data: &[u8] = &account.data;
 
     Approval::try_deserialize(&mut data).unwrap()
+}
+
+pub fn spl_token_account(svm: &LiteSVM, address: &Pubkey) -> TokenAccount {
+    let account = svm
+        .get_account(address)
+        .expect("SPL Token account not found");
+
+    let mut data: &[u8] = &account.data;
+
+    TokenAccount::try_deserialize(&mut data).unwrap()
 }

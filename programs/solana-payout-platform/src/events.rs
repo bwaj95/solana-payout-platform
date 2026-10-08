@@ -73,3 +73,25 @@ pub struct PaymentApprovalThresholdReached {
     pub payment_state: PaymentState,
     pub processed_at: i64,
 }
+
+#[event]
+pub struct SplPaymentExecuted {
+    pub organization: Pubkey,
+    pub payment: Pubkey,
+    pub payment_id: u64,
+    pub payment_revision: u32,
+
+    pub vault: Pubkey,
+    pub recipient: Pubkey,
+
+    pub destination_wallet: Pubkey,
+    pub destination_token_account: Pubkey,
+
+    pub executor_member: Pubkey,
+    pub executor_wallet: Pubkey,
+
+    pub mint: Pubkey,
+    pub amount: u64,
+    pub remaining_reserved_total: u64,
+    pub executed_at: i64,
+}

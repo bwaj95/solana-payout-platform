@@ -13,7 +13,7 @@ use solana_payout_platform::{
     compute_payment_terms_hash, Approval, ApprovalPolicyVersion, Asset, Member, Organization,
     Payment, PaymentState, Recipient, ReservationState, SettlementRail, VaultState,
     INITIAL_AUTHORIZATION_REVISION, INITIAL_PAYMENT_REVISION, INITIAL_RECIPIENT_WALLET_REVISION,
-    ROLE_ADMIN, ROLE_APPROVER, ROLE_PREPARER,
+    ROLE_ADMIN, ROLE_APPROVER, ROLE_EXECUTOR, ROLE_PREPARER,
 };
 
 use crate::common::pda::{
@@ -28,6 +28,7 @@ use crate::common::{
 
 use crate::common::executor::{
     approve_payment as execute_approve_payment,
+    execute_spl_payment as execute_spl_payment_transaction,
     finalize_payment_approval as execute_finalize_payment_approval,
 };
 
@@ -849,5 +850,162 @@ pub fn setup_approval_fixture() -> ApprovalFixture {
         payment_id,
         payment_revision: INITIAL_PAYMENT_REVISION,
         payment_amount: TEST_PAYMENT_AMOUNT,
+    }
+}
+
+pub struct ExecutePaymentFixture {
+    /*
+     * The approval fixture already contains the organization, payment,
+     * vault, recipient and members. The execution fixture extends it with
+     * the recipient's existing destination ATA.
+     */
+    pub approval: ApprovalFixture,
+
+    pub destination_wallet: Pubkey,
+    pub destination_ata: Pubkey,
+}
+
+impl ExecutePaymentFixture {
+    pub fn execute(&mut self) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+        execute_spl_payment_transaction(
+            &solana_payout_platform::ID,
+            &mut self.approval.svm,
+            &self.approval.finalizer,
+            &self.approval.organization,
+            &self.approval.finalizer_member,
+            &self.approval.mint,
+            &self.approval.vault_state,
+            &self.approval.vault_ata,
+            &self.approval.recipient,
+            &self.destination_ata,
+            &self.approval.payment,
+            self.approval.payment_id,
+        )
+    }
+
+    pub fn update_executor_member<F>(&mut self, update: F)
+    where
+        F: FnOnce(&mut Member),
+    {
+        let address = self.approval.finalizer_member;
+        let mut executor_member = member(&self.approval.svm, &address);
+
+        update(&mut executor_member);
+
+        store_anchor_account(&mut self.approval.svm, &address, &executor_member);
+    }
+
+    pub fn update_organization<F>(&mut self, update: F)
+    where
+        F: FnOnce(&mut Organization),
+    {
+        let address = self.approval.organization;
+        let mut organization_account = organization(&self.approval.svm, &address);
+
+        update(&mut organization_account);
+
+        store_anchor_account(&mut self.approval.svm, &address, &organization_account);
+    }
+
+    pub fn set_execute_after(&mut self, execute_after: i64) {
+        let mint = self.approval.mint;
+
+        self.approval.update_payment(|payment| {
+            payment.execute_after = execute_after;
+
+            /*
+             * This represents a legitimately constructed scheduled payment,
+             * rather than corrupting execute_after without updating its
+             * immutable terms hash.
+             */
+            payment.terms_hash = compute_payment_terms_hash(
+                &payment.organization,
+                payment.payment_id,
+                payment.payment_revision,
+                &payment.recipient,
+                &payment.destination,
+                payment.recipient_wallet_revision,
+                &payment.vault,
+                &mint,
+                payment.amount,
+                &payment.policy_version,
+                SettlementRail::PublicSpl,
+                payment.execute_after,
+            );
+        });
+    }
+
+    pub fn rotate_recipient_wallet(&mut self, new_destination_wallet: Pubkey) {
+        self.approval.update_recipient(|recipient| {
+            recipient.current_destination = new_destination_wallet;
+            recipient.wallet_revision += 1;
+        });
+
+        let new_destination_ata = find_test_ata(&new_destination_wallet, &self.approval.mint);
+
+        /*
+         * The newly selected wallet has its proper ATA. Execution must still
+         * fail because the approved Payment snapshot contains the old wallet
+         * and old wallet revision.
+         */
+        store_test_token_account(
+            &mut self.approval.svm,
+            &new_destination_ata,
+            &self.approval.mint,
+            &new_destination_wallet,
+            0,
+        );
+
+        self.destination_wallet = new_destination_wallet;
+        self.destination_ata = new_destination_ata;
+    }
+}
+
+pub fn setup_execute_payment_fixture() -> ExecutePaymentFixture {
+    let mut approval = setup_approval_fixture();
+
+    /*
+     * The organization creator is already an admin/finalizer in the approval
+     * fixture. Give that registered member the executor role as well.
+     */
+    let mut executor_member = member(&approval.svm, &approval.finalizer_member);
+
+    executor_member.roles |= ROLE_EXECUTOR;
+
+    store_anchor_account(
+        &mut approval.svm,
+        &approval.finalizer_member,
+        &executor_member,
+    );
+
+    /*
+     * Alice approves first. Bob then includes Alice's Approval + Member
+     * witness, reaching the 2-of-3 threshold and reserving the payment amount.
+     */
+    approval.approve(0, &[]).unwrap();
+    approval.approve(1, &[0]).unwrap();
+
+    let recipient_account = recipient(&approval.svm, &approval.recipient);
+
+    let destination_wallet = recipient_account.current_destination;
+
+    let destination_ata = find_test_ata(&destination_wallet, &approval.mint);
+
+    /*
+     * Execution does not create the recipient ATA. Registration/client setup
+     * must have created it before execution.
+     */
+    store_test_token_account(
+        &mut approval.svm,
+        &destination_ata,
+        &approval.mint,
+        &destination_wallet,
+        0,
+    );
+
+    ExecutePaymentFixture {
+        approval,
+        destination_wallet,
+        destination_ata,
     }
 }

@@ -7,7 +7,9 @@ use solana_pubkey::Pubkey;
 use solana_signer::Signer;
 use solana_transaction::versioned::VersionedTransaction;
 
-use crate::common::instructions::{approve_payment_ix, finalize_payment_approval_ix};
+use crate::common::instructions::{
+    approve_payment_ix, execute_spl_payment_ix, finalize_payment_approval_ix,
+};
 use crate::common::{
     instructions::{
         create_member_ix, create_payment_ix, create_policy_version_ix, initialize_organization_ix,
@@ -17,6 +19,19 @@ use crate::common::{
 };
 
 ///  Builds and submits a transaction to LiteSVM.
+// pub fn execute_transaction(
+//     svm: &mut LiteSVM,
+//     payer: &Pubkey,
+//     signers: &[&dyn Signer],
+//     ixs: &[Instruction],
+// ) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+//     let blockhash = svm.latest_blockhash();
+//     let msg = Message::new_with_blockhash(ixs, Some(payer), &blockhash);
+//     let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), signers).unwrap();
+
+//     svm.send_transaction(tx)
+// }
+
 pub fn execute_transaction(
     svm: &mut LiteSVM,
     payer: &Pubkey,
@@ -27,7 +42,17 @@ pub fn execute_transaction(
     let msg = Message::new_with_blockhash(ixs, Some(payer), &blockhash);
     let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), signers).unwrap();
 
-    svm.send_transaction(tx)
+    let result = svm.send_transaction(tx);
+
+    /*
+     * LiteSVM does not automatically produce a new blockhash after each
+     * transaction. Advancing it ensures that submitting the same instruction
+     * again reaches the program instead of being rejected as a duplicate
+     * transaction signature.
+     */
+    svm.expire_blockhash();
+
+    result
 }
 
 pub fn initialize_organization(
@@ -220,6 +245,38 @@ pub fn finalize_payment_approval(
         payment,
         payment_id,
         witnesses,
+    );
+
+    execute_transaction(svm, &authority.pubkey(), &[authority.signer()], &[ix])
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn execute_spl_payment(
+    program_id: &Pubkey,
+    svm: &mut LiteSVM,
+    authority: &User,
+    organization: &Pubkey,
+    executor_member: &Pubkey,
+    mint: &Pubkey,
+    vault_state: &Pubkey,
+    vault_ata: &Pubkey,
+    recipient: &Pubkey,
+    destination_ata: &Pubkey,
+    payment: &Pubkey,
+    payment_id: u64,
+) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+    let ix = execute_spl_payment_ix(
+        program_id,
+        &authority.pubkey(),
+        organization,
+        executor_member,
+        mint,
+        vault_state,
+        vault_ata,
+        recipient,
+        destination_ata,
+        payment,
+        payment_id,
     );
 
     execute_transaction(svm, &authority.pubkey(), &[authority.signer()], &[ix])

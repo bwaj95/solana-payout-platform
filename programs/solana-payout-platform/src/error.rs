@@ -110,6 +110,9 @@ pub enum ErrorCode {
     #[msg("The member must be an administrator or approver")]
     MissingPaymentApproverRole,
 
+    #[msg("The member does not have permission to execute payments")]
+    MissingPaymentExecutorRole,
+
     #[msg("The member does not have permission to finalize payment approval")]
     MissingPaymentFinalizerRole,
 
@@ -154,4 +157,16 @@ pub enum ErrorCode {
 
     #[msg("Arithmetic overflow")]
     ArithmeticOverflow,
+
+    #[msg("The payment has an invalid approval state for execution")]
+    InvalidPaymentApprovalState,
+
+    #[msg("The payment has an invalid reservation state for execution")]
+    InvalidPaymentReservationExecutionState,
+
+    #[msg("Need to hit the execution time to make the payment")]
+    ExecutionTimeNotReached,
+
+    #[msg("The vault reserved total is insufficient to make the payment")]
+    VaultReservationInsufficient,
 }

@@ -13,7 +13,9 @@ use crate::common::pda::{
     find_vault_state_pda, find_vault_token_account,
 };
 
-use solana_payout_platform::accounts::{ApprovePayment, FinalizePaymentApproval};
+use solana_payout_platform::accounts::{
+    ApprovePayment, ExecuteSplPayment, FinalizePaymentApproval,
+};
 
 pub fn initialize_organization_ix(
     program_id: &Pubkey,
@@ -298,5 +300,40 @@ pub fn finalize_payment_approval_ix(
         program_id: *program_id,
         accounts,
         data: instruction::FinalizePaymentApproval { payment_id }.data(),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn execute_spl_payment_ix(
+    program_id: &Pubkey,
+    authority: &Pubkey,
+    organization: &Pubkey,
+    executor_member: &Pubkey,
+    mint: &Pubkey,
+    vault_state: &Pubkey,
+    vault_ata: &Pubkey,
+    recipient: &Pubkey,
+    destination_ata: &Pubkey,
+    payment: &Pubkey,
+    payment_id: u64,
+) -> Instruction {
+    let accounts = ExecuteSplPayment {
+        authority: *authority,
+        organization: *organization,
+        executor_member: *executor_member,
+        mint: *mint,
+        vault_state: *vault_state,
+        vault_ata: *vault_ata,
+        recipient: *recipient,
+        destination_ata: *destination_ata,
+        payment: *payment,
+        token_program: anchor_spl::token::ID,
+    }
+    .to_account_metas(None);
+
+    Instruction {
+        program_id: *program_id,
+        accounts,
+        data: instruction::ExecuteSplPayment { payment_id }.data(),
     }
 }

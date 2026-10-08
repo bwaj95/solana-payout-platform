@@ -34,6 +34,17 @@ pub(crate) fn validate_policy(policy: &ApprovalPolicyVersion) -> Result<()> {
     Ok(())
 }
 
+pub(crate) fn get_vault_mint_from_vault_state(vault_state: &VaultState) -> Result<Pubkey> {
+    let vault_mint = match vault_state.asset {
+        Asset::Spl { mint } => mint,
+        Asset::NativeSol => {
+            return err!(ErrorCode::UnsupportedVaultAsset);
+        }
+    };
+
+    Ok(vault_mint)
+}
+
 /// Extract the SPL mint from the vault and recompute the payment terms hash.
 ///
 /// This detects unexpected changes to the frozen Payment fields before an

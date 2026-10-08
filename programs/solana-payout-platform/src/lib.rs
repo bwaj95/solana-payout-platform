@@ -1,12 +1,13 @@
+pub mod anchor_utils;
 pub mod constants;
 pub mod error;
 pub mod events;
 pub mod instructions;
 pub mod payment_terms;
 pub mod state;
-
 use anchor_lang::prelude::*;
 
+pub use anchor_utils::*;
 pub use constants::*;
 pub use instructions::*;
 pub use payment_terms::*;
@@ -85,5 +86,9 @@ pub mod solana_payout_platform {
         payment_id: u64,
     ) -> Result<()> {
         instructions::finalize_payment_approval::finalize_payment_approval_handler(ctx, payment_id)
+    }
+
+    pub fn execute_spl_payment(ctx: Context<ExecuteSplPayment>, payment_id: u64) -> Result<()> {
+        instructions::execute_spl_payment::execute_spl_payment_handler(ctx, payment_id)
     }
 }
