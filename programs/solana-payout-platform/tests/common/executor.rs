@@ -9,6 +9,7 @@ use solana_transaction::versioned::VersionedTransaction;
 
 use crate::common::instructions::{
     approve_payment_ix, cancel_payment_ix, execute_spl_payment_ix, finalize_payment_approval_ix,
+    rotate_recipient_wallet_ix,
 };
 use crate::common::{
     instructions::{
@@ -301,6 +302,36 @@ pub fn cancel_payment(
         vault_state,
         payment,
         payment_id,
+    );
+
+    execute_transaction(svm, &authority.pubkey(), &[authority.signer()], &[ix])
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn rotate_recipient_wallet(
+    program_id: &Pubkey,
+    svm: &mut LiteSVM,
+    authority: &User,
+    organization: &Pubkey,
+    registrar_member: &Pubkey,
+    vault_state: &Pubkey,
+    recipient: &Pubkey,
+    mint: &Pubkey,
+    new_destination_token_account: &Pubkey,
+    recipient_id: u64,
+    new_destination_wallet: Pubkey,
+) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+    let ix = rotate_recipient_wallet_ix(
+        program_id,
+        &authority.pubkey(),
+        organization,
+        registrar_member,
+        vault_state,
+        recipient,
+        mint,
+        new_destination_token_account,
+        recipient_id,
+        new_destination_wallet,
     );
 
     execute_transaction(svm, &authority.pubkey(), &[authority.signer()], &[ix])

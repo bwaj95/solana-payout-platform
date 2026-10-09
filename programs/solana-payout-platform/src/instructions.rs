@@ -9,6 +9,7 @@ pub mod finalize_payment_approval;
 pub mod initialize_organization;
 pub mod initialize_vault;
 pub mod register_recipient;
+pub mod rotate_recipient_wallet;
 
 pub use approve_payment::*;
 pub use cancel_payment::*;
@@ -20,3 +21,4 @@ pub use finalize_payment_approval::*;
 pub use initialize_organization::*;
 pub use initialize_vault::*;
 pub use register_recipient::*;
+pub use rotate_recipient_wallet::*;

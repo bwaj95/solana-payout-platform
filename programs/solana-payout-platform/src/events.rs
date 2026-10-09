@@ -116,3 +116,21 @@ pub struct PaymentCancelled {
     pub remaining_reserved_total: u64,
     pub cancelled_at: i64,
 }
+
+#[event]
+pub struct RecipientWalletRotated {
+    pub organization: Pubkey,
+    pub recipient: Pubkey,
+    pub recipient_id: u64,
+
+    pub previous_destination: Pubkey,
+    pub new_destination: Pubkey,
+
+    pub previous_wallet_revision: u32,
+    pub new_wallet_revision: u32,
+
+    pub rotated_by_member: Pubkey,
+    pub rotated_by_wallet: Pubkey,
+
+    pub rotated_at: i64,
+}

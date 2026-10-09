@@ -30,6 +30,7 @@ use crate::common::executor::{
     approve_payment as execute_approve_payment, cancel_payment as execute_cancel_payment,
     execute_spl_payment as execute_spl_payment_transaction,
     finalize_payment_approval as execute_finalize_payment_approval,
+    rotate_recipient_wallet as execute_rotate_recipient_wallet,
 };
 
 use crate::common::accounts::{approval as load_approval, payment as load_payment};
@@ -1104,5 +1105,222 @@ impl CancelPaymentFixture {
 pub fn setup_cancel_payment_fixture() -> CancelPaymentFixture {
     CancelPaymentFixture {
         approval: setup_approval_fixture(),
+    }
+}
+
+pub struct RotateRecipientWalletFixture {
+    /*
+     * ExecutePaymentFixture gives us:
+     *
+     * - a valid organization and administrator
+     * - a registered recipient
+     * - a valid SPL vault and mint
+     * - an Approved + Held payment
+     * - the recipient's original destination ATA
+     */
+    pub execution: ExecutePaymentFixture,
+    pub recipient_id: u64,
+
+    pub submitted_mint: Pubkey,
+    pub new_destination_wallet: Pubkey,
+    pub new_destination_token_account: Pubkey,
+}
+
+impl RotateRecipientWalletFixture {
+    pub fn rotate(&mut self) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+        execute_rotate_recipient_wallet(
+            &solana_payout_platform::ID,
+            &mut self.execution.approval.svm,
+            &self.execution.approval.finalizer,
+            &self.execution.approval.organization,
+            &self.execution.approval.finalizer_member,
+            &self.execution.approval.vault_state,
+            &self.execution.approval.recipient,
+            &self.submitted_mint,
+            &self.new_destination_token_account,
+            self.recipient_id,
+            self.new_destination_wallet,
+        )
+    }
+
+    /*
+     * Supplies an approver wallet while still passing the administrator's
+     * Member PDA. The authorized-wallet constraint must reject it.
+     */
+    pub fn rotate_as_approver(
+        &mut self,
+        approver_index: usize,
+    ) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+        let approver = &self.execution.approval.approvers[approver_index];
+
+        execute_rotate_recipient_wallet(
+            &solana_payout_platform::ID,
+            &mut self.execution.approval.svm,
+            &approver.user,
+            &self.execution.approval.organization,
+            &self.execution.approval.finalizer_member,
+            &self.execution.approval.vault_state,
+            &self.execution.approval.recipient,
+            &self.submitted_mint,
+            &self.new_destination_token_account,
+            self.recipient_id,
+            self.new_destination_wallet,
+        )
+    }
+
+    pub fn prepare_destination(&mut self, destination_wallet: Pubkey) {
+        let destination_token_account = find_test_ata(&destination_wallet, &self.submitted_mint);
+
+        store_test_token_account(
+            &mut self.execution.approval.svm,
+            &destination_token_account,
+            &self.submitted_mint,
+            &destination_wallet,
+            0,
+        );
+
+        self.new_destination_wallet = destination_wallet;
+        self.new_destination_token_account = destination_token_account;
+    }
+
+    pub fn use_noncanonical_destination_token_account(&mut self) {
+        let noncanonical_token_account = Pubkey::new_unique();
+
+        store_test_token_account(
+            &mut self.execution.approval.svm,
+            &noncanonical_token_account,
+            &self.submitted_mint,
+            &self.new_destination_wallet,
+            0,
+        );
+
+        self.new_destination_token_account = noncanonical_token_account;
+    }
+
+    pub fn use_wrong_mint(&mut self) {
+        let wrong_mint = Pubkey::new_unique();
+
+        store_test_mint(
+            &mut self.execution.approval.svm,
+            &wrong_mint,
+            TEST_USDC_DECIMALS,
+        );
+
+        self.submitted_mint = wrong_mint;
+
+        let destination_token_account = find_test_ata(&self.new_destination_wallet, &wrong_mint);
+
+        store_test_token_account(
+            &mut self.execution.approval.svm,
+            &destination_token_account,
+            &wrong_mint,
+            &self.new_destination_wallet,
+            0,
+        );
+
+        self.new_destination_token_account = destination_token_account;
+    }
+
+    pub fn corrupt_destination_token_owner(&mut self, wrong_owner: Pubkey) {
+        store_test_token_account(
+            &mut self.execution.approval.svm,
+            &self.new_destination_token_account,
+            &self.submitted_mint,
+            &wrong_owner,
+            0,
+        );
+    }
+
+    pub fn update_registrar_member<F>(&mut self, update: F)
+    where
+        F: FnOnce(&mut Member),
+    {
+        let address = self.execution.approval.finalizer_member;
+
+        let mut member_account = member(&self.execution.approval.svm, &address);
+
+        update(&mut member_account);
+
+        store_anchor_account(&mut self.execution.approval.svm, &address, &member_account);
+    }
+
+    pub fn update_organization<F>(&mut self, update: F)
+    where
+        F: FnOnce(&mut Organization),
+    {
+        let address = self.execution.approval.organization;
+
+        let mut organization_account = organization(&self.execution.approval.svm, &address);
+
+        update(&mut organization_account);
+
+        store_anchor_account(
+            &mut self.execution.approval.svm,
+            &address,
+            &organization_account,
+        );
+    }
+
+    /*
+     * Execute using the newly rotated destination ATA.
+     *
+     * The ATA itself is valid, but the existing Payment still contains the
+     * previous wallet and previous wallet revision, so execution must fail.
+     */
+    pub fn execute_existing_payment_against_new_destination(
+        &mut self,
+    ) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+        self.execution.destination_ata = self.new_destination_token_account;
+
+        self.execution.execute()
+    }
+
+    pub fn cancel_existing_payment(
+        &mut self,
+    ) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+        execute_cancel_payment(
+            &solana_payout_platform::ID,
+            &mut self.execution.approval.svm,
+            &self.execution.approval.finalizer,
+            &self.execution.approval.organization,
+            &self.execution.approval.finalizer_member,
+            &self.execution.approval.vault_state,
+            &self.execution.approval.payment,
+            self.execution.approval.payment_id,
+        )
+    }
+}
+
+pub fn setup_rotate_recipient_wallet_fixture() -> RotateRecipientWalletFixture {
+    let mut execution = setup_execute_payment_fixture();
+
+    let recipient_id =
+        recipient(&execution.approval.svm, &execution.approval.recipient).recipient_id;
+
+    /*
+     * Use Alice's wallet as the new payout destination. Her role as an
+     * approver is unrelated to being a token recipient; it simply provides
+     * a stable test wallet address.
+     */
+    let new_destination_wallet = execution.approval.approvers[0].user.pubkey();
+
+    let submitted_mint = execution.approval.mint;
+
+    let new_destination_token_account = find_test_ata(&new_destination_wallet, &submitted_mint);
+
+    store_test_token_account(
+        &mut execution.approval.svm,
+        &new_destination_token_account,
+        &submitted_mint,
+        &new_destination_wallet,
+        0,
+    );
+
+    RotateRecipientWalletFixture {
+        execution,
+        submitted_mint,
+        new_destination_wallet,
+        new_destination_token_account,
+        recipient_id,
     }
 }

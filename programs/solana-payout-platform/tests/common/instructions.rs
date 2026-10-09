@@ -15,6 +15,7 @@ use crate::common::pda::{
 
 use solana_payout_platform::accounts::{
     ApprovePayment, CancelPayment, ExecuteSplPayment, FinalizePaymentApproval,
+    RotateRecipientWallet,
 };
 
 pub fn initialize_organization_ix(
@@ -360,5 +361,40 @@ pub fn cancel_payment_ix(
         program_id: *program_id,
         accounts,
         data: instruction::CancelPayment { payment_id }.data(),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn rotate_recipient_wallet_ix(
+    program_id: &Pubkey,
+    authority: &Pubkey,
+    organization: &Pubkey,
+    registrar_member: &Pubkey,
+    vault_state: &Pubkey,
+    recipient: &Pubkey,
+    mint: &Pubkey,
+    new_destination_token_account: &Pubkey,
+    recipient_id: u64,
+    new_destination_wallet: Pubkey,
+) -> Instruction {
+    let accounts = RotateRecipientWallet {
+        authority: *authority,
+        organization: *organization,
+        registrar_member: *registrar_member,
+        vault_state: *vault_state,
+        recipient: *recipient,
+        mint: *mint,
+        new_destination_token_account: *new_destination_token_account,
+    }
+    .to_account_metas(None);
+
+    Instruction {
+        program_id: *program_id,
+        accounts,
+        data: instruction::RotateRecipientWallet {
+            recipient_id,
+            new_destination_wallet,
+        }
+        .data(),
     }
 }

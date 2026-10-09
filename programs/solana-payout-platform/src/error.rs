@@ -172,4 +172,7 @@ pub enum ErrorCode {
 
     #[msg("The payment cannot be cancelled from its current payment and reservation states")]
     InvalidPaymentCancellationState,
+
+    #[msg("The new recipient destination is the same as the current destination")]
+    RecipientDestinationUnchanged,
 }

@@ -95,4 +95,16 @@ pub mod solana_payout_platform {
     pub fn cancel_payment(ctx: Context<CancelPayment>, payment_id: u64) -> Result<()> {
         instructions::cancel_payment::cancel_payment_handler(ctx, payment_id)
     }
+
+    pub fn rotate_recipient_wallet(
+        ctx: Context<RotateRecipientWallet>,
+        recipient_id: u64,
+        new_destination_wallet: Pubkey,
+    ) -> Result<()> {
+        instructions::rotate_recipient_wallet::rotate_recipient_wallet_handler(
+            ctx,
+            recipient_id,
+            new_destination_wallet,
+        )
+    }
 }
