@@ -169,4 +169,7 @@ pub enum ErrorCode {
 
     #[msg("The vault reserved total is insufficient to make the payment")]
     VaultReservationInsufficient,
+
+    #[msg("The payment cannot be cancelled from its current payment and reservation states")]
+    InvalidPaymentCancellationState,
 }

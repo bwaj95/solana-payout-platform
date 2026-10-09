@@ -27,7 +27,7 @@ use crate::common::{
 };
 
 use crate::common::executor::{
-    approve_payment as execute_approve_payment,
+    approve_payment as execute_approve_payment, cancel_payment as execute_cancel_payment,
     execute_spl_payment as execute_spl_payment_transaction,
     finalize_payment_approval as execute_finalize_payment_approval,
 };
@@ -1007,5 +1007,102 @@ pub fn setup_execute_payment_fixture() -> ExecutePaymentFixture {
         approval,
         destination_wallet,
         destination_ata,
+    }
+}
+
+pub struct CancelPaymentFixture {
+    pub approval: ApprovalFixture,
+}
+
+impl CancelPaymentFixture {
+    pub fn cancel(&mut self) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+        execute_cancel_payment(
+            &solana_payout_platform::ID,
+            &mut self.approval.svm,
+            &self.approval.finalizer,
+            &self.approval.organization,
+            &self.approval.finalizer_member,
+            &self.approval.vault_state,
+            &self.approval.payment,
+            self.approval.payment_id,
+        )
+    }
+
+    /*
+     * Calls cancellation using an approver wallet while still supplying
+     * the real admin Member PDA. The wallet/member authorization check
+     * must reject this combination.
+     */
+    pub fn cancel_as_approver(
+        &mut self,
+        approver_index: usize,
+    ) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+        let approver = &self.approval.approvers[approver_index];
+
+        execute_cancel_payment(
+            &solana_payout_platform::ID,
+            &mut self.approval.svm,
+            &approver.user,
+            &self.approval.organization,
+            &self.approval.finalizer_member,
+            &self.approval.vault_state,
+            &self.approval.payment,
+            self.approval.payment_id,
+        )
+    }
+
+    pub fn reach_approved_and_held(&mut self) {
+        self.approval.approve(0, &[]).unwrap();
+        self.approval.approve(1, &[0]).unwrap();
+
+        let stored_payment = load_payment(&self.approval.svm, &self.approval.payment);
+
+        assert_eq!(stored_payment.payment_state, PaymentState::Approved);
+
+        assert_eq!(stored_payment.reservation_state, ReservationState::Held);
+    }
+
+    pub fn reach_awaiting_funds(&mut self) {
+        self.approval
+            .set_vault_token_balance(self.approval.payment_amount - 1);
+
+        self.approval.approve(0, &[]).unwrap();
+        self.approval.approve(1, &[0]).unwrap();
+
+        let stored_payment = load_payment(&self.approval.svm, &self.approval.payment);
+
+        assert_eq!(stored_payment.payment_state, PaymentState::AwaitingFunds);
+
+        assert_eq!(stored_payment.reservation_state, ReservationState::None);
+    }
+
+    pub fn update_admin_member<F>(&mut self, update: F)
+    where
+        F: FnOnce(&mut Member),
+    {
+        let address = self.approval.finalizer_member;
+        let mut admin_member = member(&self.approval.svm, &address);
+
+        update(&mut admin_member);
+
+        store_anchor_account(&mut self.approval.svm, &address, &admin_member);
+    }
+
+    pub fn update_organization<F>(&mut self, update: F)
+    where
+        F: FnOnce(&mut Organization),
+    {
+        let address = self.approval.organization;
+        let mut organization_account = organization(&self.approval.svm, &address);
+
+        update(&mut organization_account);
+
+        store_anchor_account(&mut self.approval.svm, &address, &organization_account);
+    }
+}
+
+pub fn setup_cancel_payment_fixture() -> CancelPaymentFixture {
+    CancelPaymentFixture {
+        approval: setup_approval_fixture(),
     }
 }

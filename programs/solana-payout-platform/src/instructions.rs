@@ -1,5 +1,6 @@
 mod approval_validation;
 pub mod approve_payment;
+pub mod cancel_payment;
 pub mod create_member;
 pub mod create_payment;
 pub mod create_policy_version;
@@ -10,6 +11,7 @@ pub mod initialize_vault;
 pub mod register_recipient;
 
 pub use approve_payment::*;
+pub use cancel_payment::*;
 pub use create_member::*;
 pub use create_payment::*;
 pub use create_policy_version::*;

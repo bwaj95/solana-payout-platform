@@ -1,4 +1,4 @@
-use crate::PaymentState;
+use crate::{PaymentState, ReservationState};
 use anchor_lang::prelude::*;
 
 #[event]
@@ -94,4 +94,25 @@ pub struct SplPaymentExecuted {
     pub amount: u64,
     pub remaining_reserved_total: u64,
     pub executed_at: i64,
+}
+
+#[event]
+pub struct PaymentCancelled {
+    pub organization: Pubkey,
+    pub payment: Pubkey,
+    pub payment_id: u64,
+    pub payment_revision: u32,
+
+    pub vault: Pubkey,
+
+    pub cancelled_by_member: Pubkey,
+    pub cancelled_by_wallet: Pubkey,
+
+    pub previous_payment_state: PaymentState,
+    pub previous_reservation_state: ReservationState,
+    pub final_reservation_state: ReservationState,
+
+    pub released_amount: u64,
+    pub remaining_reserved_total: u64,
+    pub cancelled_at: i64,
 }

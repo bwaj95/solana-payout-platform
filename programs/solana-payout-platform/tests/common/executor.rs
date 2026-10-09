@@ -8,7 +8,7 @@ use solana_signer::Signer;
 use solana_transaction::versioned::VersionedTransaction;
 
 use crate::common::instructions::{
-    approve_payment_ix, execute_spl_payment_ix, finalize_payment_approval_ix,
+    approve_payment_ix, cancel_payment_ix, execute_spl_payment_ix, finalize_payment_approval_ix,
 };
 use crate::common::{
     instructions::{
@@ -275,6 +275,30 @@ pub fn execute_spl_payment(
         vault_ata,
         recipient,
         destination_ata,
+        payment,
+        payment_id,
+    );
+
+    execute_transaction(svm, &authority.pubkey(), &[authority.signer()], &[ix])
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn cancel_payment(
+    program_id: &Pubkey,
+    svm: &mut LiteSVM,
+    authority: &User,
+    organization: &Pubkey,
+    admin_member: &Pubkey,
+    vault_state: &Pubkey,
+    payment: &Pubkey,
+    payment_id: u64,
+) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+    let ix = cancel_payment_ix(
+        program_id,
+        &authority.pubkey(),
+        organization,
+        admin_member,
+        vault_state,
         payment,
         payment_id,
     );

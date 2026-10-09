@@ -91,4 +91,8 @@ pub mod solana_payout_platform {
     pub fn execute_spl_payment(ctx: Context<ExecuteSplPayment>, payment_id: u64) -> Result<()> {
         instructions::execute_spl_payment::execute_spl_payment_handler(ctx, payment_id)
     }
+
+    pub fn cancel_payment(ctx: Context<CancelPayment>, payment_id: u64) -> Result<()> {
+        instructions::cancel_payment::cancel_payment_handler(ctx, payment_id)
+    }
 }

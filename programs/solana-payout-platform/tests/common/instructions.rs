@@ -14,7 +14,7 @@ use crate::common::pda::{
 };
 
 use solana_payout_platform::accounts::{
-    ApprovePayment, ExecuteSplPayment, FinalizePaymentApproval,
+    ApprovePayment, CancelPayment, ExecuteSplPayment, FinalizePaymentApproval,
 };
 
 pub fn initialize_organization_ix(
@@ -335,5 +335,30 @@ pub fn execute_spl_payment_ix(
         program_id: *program_id,
         accounts,
         data: instruction::ExecuteSplPayment { payment_id }.data(),
+    }
+}
+
+pub fn cancel_payment_ix(
+    program_id: &Pubkey,
+    authority: &Pubkey,
+    organization: &Pubkey,
+    admin_member: &Pubkey,
+    vault_state: &Pubkey,
+    payment: &Pubkey,
+    payment_id: u64,
+) -> Instruction {
+    let accounts = CancelPayment {
+        authority: *authority,
+        organization: *organization,
+        admin_member: *admin_member,
+        vault_state: *vault_state,
+        payment: *payment,
+    }
+    .to_account_metas(None);
+
+    Instruction {
+        program_id: *program_id,
+        accounts,
+        data: instruction::CancelPayment { payment_id }.data(),
     }
 }
