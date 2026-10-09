@@ -31,6 +31,8 @@ use crate::common::executor::{
     execute_spl_payment as execute_spl_payment_transaction,
     finalize_payment_approval as execute_finalize_payment_approval,
     rotate_recipient_wallet as execute_rotate_recipient_wallet,
+    set_organization_paused as execute_set_organization_paused,
+    withdraw_spl_vault_funds as execute_withdraw_spl_vault_funds,
 };
 
 use crate::common::accounts::{approval as load_approval, payment as load_payment};
@@ -1322,5 +1324,291 @@ pub fn setup_rotate_recipient_wallet_fixture() -> RotateRecipientWalletFixture {
         new_destination_wallet,
         new_destination_token_account,
         recipient_id,
+    }
+}
+
+pub struct OrganizationPauseFixture {
+    /*
+     * Reusing ExecutePaymentFixture lets us test both the administrative
+     * state change and its effect on an Approved + Held payment.
+     */
+    pub execution: ExecutePaymentFixture,
+}
+
+impl OrganizationPauseFixture {
+    pub fn set_paused(
+        &mut self,
+        paused: bool,
+    ) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+        execute_set_organization_paused(
+            &solana_payout_platform::ID,
+            &mut self.execution.approval.svm,
+            &self.execution.approval.finalizer,
+            &self.execution.approval.organization,
+            &self.execution.approval.finalizer_member,
+            paused,
+        )
+    }
+
+    /*
+     * Uses an approver wallet while supplying the real administrator Member
+     * PDA. The authorized-wallet constraint must reject this combination.
+     */
+    pub fn set_paused_as_approver(
+        &mut self,
+        approver_index: usize,
+        paused: bool,
+    ) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+        let approver = &self.execution.approval.approvers[approver_index];
+
+        execute_set_organization_paused(
+            &solana_payout_platform::ID,
+            &mut self.execution.approval.svm,
+            &approver.user,
+            &self.execution.approval.organization,
+            &self.execution.approval.finalizer_member,
+            paused,
+        )
+    }
+
+    pub fn update_admin_member<F>(&mut self, update: F)
+    where
+        F: FnOnce(&mut Member),
+    {
+        let address = self.execution.approval.finalizer_member;
+
+        let mut admin_member = member(&self.execution.approval.svm, &address);
+
+        update(&mut admin_member);
+
+        store_anchor_account(&mut self.execution.approval.svm, &address, &admin_member);
+    }
+}
+
+pub fn setup_organization_pause_fixture() -> OrganizationPauseFixture {
+    OrganizationPauseFixture {
+        execution: setup_execute_payment_fixture(),
+    }
+}
+
+pub struct WithdrawSplVaultFundsFixture {
+    /*
+     * ExecutePaymentFixture provides an Approved + Held payment.
+     *
+     * Therefore:
+     * - the vault contains tokens;
+     * - payment.amount is included in reserved_total;
+     * - withdrawal must leave those reserved tokens untouched.
+     */
+    pub execution: ExecutePaymentFixture,
+
+    pub submitted_mint: Pubkey,
+    pub destination_wallet: Pubkey,
+    pub destination_token_account: Pubkey,
+}
+
+impl WithdrawSplVaultFundsFixture {
+    pub fn withdraw(
+        &mut self,
+        amount: u64,
+    ) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+        execute_withdraw_spl_vault_funds(
+            &solana_payout_platform::ID,
+            &mut self.execution.approval.svm,
+            &self.execution.approval.finalizer,
+            &self.execution.approval.organization,
+            &self.execution.approval.finalizer_member,
+            &self.execution.approval.vault_state,
+            &self.submitted_mint,
+            &self.execution.approval.vault_ata,
+            &self.destination_token_account,
+            amount,
+            self.destination_wallet,
+        )
+    }
+
+    pub fn withdraw_as_approver(
+        &mut self,
+        approver_index: usize,
+        amount: u64,
+    ) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+        let approver = &self.execution.approval.approvers[approver_index];
+
+        /*
+         * The real treasury Member PDA is supplied, but a different wallet
+         * signs. The member-wallet authorization constraint must reject it.
+         */
+        execute_withdraw_spl_vault_funds(
+            &solana_payout_platform::ID,
+            &mut self.execution.approval.svm,
+            &approver.user,
+            &self.execution.approval.organization,
+            &self.execution.approval.finalizer_member,
+            &self.execution.approval.vault_state,
+            &self.submitted_mint,
+            &self.execution.approval.vault_ata,
+            &self.destination_token_account,
+            amount,
+            self.destination_wallet,
+        )
+    }
+
+    pub fn available_unreserved_balance(&self) -> u64 {
+        let vault_token_account = crate::common::accounts::spl_token_account(
+            &self.execution.approval.svm,
+            &self.execution.approval.vault_ata,
+        );
+
+        let vault = vault_state(
+            &self.execution.approval.svm,
+            &self.execution.approval.vault_state,
+        );
+
+        vault_token_account
+            .amount
+            .checked_sub(vault.reserved_total)
+            .unwrap()
+    }
+
+    pub fn prepare_destination(&mut self, destination_wallet: Pubkey) {
+        let destination_token_account = find_test_ata(&destination_wallet, &self.submitted_mint);
+
+        store_test_token_account(
+            &mut self.execution.approval.svm,
+            &destination_token_account,
+            &self.submitted_mint,
+            &destination_wallet,
+            0,
+        );
+
+        self.destination_wallet = destination_wallet;
+        self.destination_token_account = destination_token_account;
+    }
+
+    pub fn use_noncanonical_destination_token_account(&mut self) {
+        let noncanonical_token_account = Pubkey::new_unique();
+
+        store_test_token_account(
+            &mut self.execution.approval.svm,
+            &noncanonical_token_account,
+            &self.submitted_mint,
+            &self.destination_wallet,
+            0,
+        );
+
+        self.destination_token_account = noncanonical_token_account;
+    }
+
+    pub fn use_wrong_mint(&mut self) {
+        let wrong_mint = Pubkey::new_unique();
+
+        store_test_mint(
+            &mut self.execution.approval.svm,
+            &wrong_mint,
+            TEST_USDC_DECIMALS,
+        );
+
+        self.submitted_mint = wrong_mint;
+
+        let destination_token_account = find_test_ata(&self.destination_wallet, &wrong_mint);
+
+        store_test_token_account(
+            &mut self.execution.approval.svm,
+            &destination_token_account,
+            &wrong_mint,
+            &self.destination_wallet,
+            0,
+        );
+
+        self.destination_token_account = destination_token_account;
+    }
+
+    pub fn corrupt_destination_token_owner(&mut self, wrong_owner: Pubkey) {
+        store_test_token_account(
+            &mut self.execution.approval.svm,
+            &self.destination_token_account,
+            &self.submitted_mint,
+            &wrong_owner,
+            0,
+        );
+    }
+
+    pub fn use_vault_as_destination(&mut self) {
+        /*
+         * The vault ATA really is the canonical ATA for vault_state, so it
+         * would pass ordinary token-account validation. The handler's
+         * explicit self-destination check must reject it.
+         */
+        self.destination_wallet = self.execution.approval.vault_state;
+        self.destination_token_account = self.execution.approval.vault_ata;
+    }
+
+    pub fn update_treasury_member<F>(&mut self, update: F)
+    where
+        F: FnOnce(&mut Member),
+    {
+        let address = self.execution.approval.finalizer_member;
+        let mut member_account = member(&self.execution.approval.svm, &address);
+
+        update(&mut member_account);
+
+        store_anchor_account(&mut self.execution.approval.svm, &address, &member_account);
+    }
+
+    pub fn update_organization<F>(&mut self, update: F)
+    where
+        F: FnOnce(&mut Organization),
+    {
+        let address = self.execution.approval.organization;
+        let mut organization_account = organization(&self.execution.approval.svm, &address);
+
+        update(&mut organization_account);
+
+        store_anchor_account(
+            &mut self.execution.approval.svm,
+            &address,
+            &organization_account,
+        );
+    }
+
+    pub fn update_vault<F>(&mut self, update: F)
+    where
+        F: FnOnce(&mut VaultState),
+    {
+        let address = self.execution.approval.vault_state;
+        let mut vault_account = vault_state(&self.execution.approval.svm, &address);
+
+        update(&mut vault_account);
+
+        store_anchor_account(&mut self.execution.approval.svm, &address, &vault_account);
+    }
+}
+
+pub fn setup_withdraw_spl_vault_funds_fixture() -> WithdrawSplVaultFundsFixture {
+    let mut execution = setup_execute_payment_fixture();
+
+    /*
+     * Carol's wallet is only used as a convenient withdrawal destination.
+     * Her approver role gives her no withdrawal authority.
+     */
+    let destination_wallet = execution.approval.approvers[2].user.pubkey();
+
+    let submitted_mint = execution.approval.mint;
+
+    let destination_token_account = find_test_ata(&destination_wallet, &submitted_mint);
+
+    store_test_token_account(
+        &mut execution.approval.svm,
+        &destination_token_account,
+        &submitted_mint,
+        &destination_wallet,
+        0,
+    );
+
+    WithdrawSplVaultFundsFixture {
+        execution,
+        submitted_mint,
+        destination_wallet,
+        destination_token_account,
     }
 }

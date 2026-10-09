@@ -9,12 +9,12 @@ use solana_transaction::versioned::VersionedTransaction;
 
 use crate::common::instructions::{
     approve_payment_ix, cancel_payment_ix, execute_spl_payment_ix, finalize_payment_approval_ix,
-    rotate_recipient_wallet_ix,
+    rotate_recipient_wallet_ix, set_organization_paused_ix,
 };
 use crate::common::{
     instructions::{
         create_member_ix, create_payment_ix, create_policy_version_ix, initialize_organization_ix,
-        initialize_vault_ix,
+        initialize_vault_ix, withdraw_spl_vault_funds_ix,
     },
     users::User,
 };
@@ -332,6 +332,55 @@ pub fn rotate_recipient_wallet(
         new_destination_token_account,
         recipient_id,
         new_destination_wallet,
+    );
+
+    execute_transaction(svm, &authority.pubkey(), &[authority.signer()], &[ix])
+}
+
+pub fn set_organization_paused(
+    program_id: &Pubkey,
+    svm: &mut LiteSVM,
+    authority: &User,
+    organization: &Pubkey,
+    admin_member: &Pubkey,
+    paused: bool,
+) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+    let ix = set_organization_paused_ix(
+        program_id,
+        &authority.pubkey(),
+        organization,
+        admin_member,
+        paused,
+    );
+
+    execute_transaction(svm, &authority.pubkey(), &[authority.signer()], &[ix])
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn withdraw_spl_vault_funds(
+    program_id: &Pubkey,
+    svm: &mut LiteSVM,
+    authority: &User,
+    organization: &Pubkey,
+    treasury_member: &Pubkey,
+    vault_state: &Pubkey,
+    mint: &Pubkey,
+    vault_ata: &Pubkey,
+    destination_token_account: &Pubkey,
+    amount: u64,
+    destination_wallet: Pubkey,
+) -> Result<TransactionMetadata, FailedTransactionMetadata> {
+    let ix = withdraw_spl_vault_funds_ix(
+        program_id,
+        &authority.pubkey(),
+        organization,
+        treasury_member,
+        vault_state,
+        mint,
+        vault_ata,
+        destination_token_account,
+        amount,
+        destination_wallet,
     );
 
     execute_transaction(svm, &authority.pubkey(), &[authority.signer()], &[ix])

@@ -15,7 +15,7 @@ use crate::common::pda::{
 
 use solana_payout_platform::accounts::{
     ApprovePayment, CancelPayment, ExecuteSplPayment, FinalizePaymentApproval,
-    RotateRecipientWallet,
+    RotateRecipientWallet, SetOrganizationPaused,
 };
 
 pub fn initialize_organization_ix(
@@ -394,6 +394,63 @@ pub fn rotate_recipient_wallet_ix(
         data: instruction::RotateRecipientWallet {
             recipient_id,
             new_destination_wallet,
+        }
+        .data(),
+    }
+}
+
+pub fn set_organization_paused_ix(
+    program_id: &Pubkey,
+    authority: &Pubkey,
+    organization: &Pubkey,
+    admin_member: &Pubkey,
+    paused: bool,
+) -> Instruction {
+    let accounts = SetOrganizationPaused {
+        authority: *authority,
+        organization: *organization,
+        admin_member: *admin_member,
+    }
+    .to_account_metas(None);
+
+    Instruction {
+        program_id: *program_id,
+        accounts,
+        data: instruction::SetOrganizationPaused { paused }.data(),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn withdraw_spl_vault_funds_ix(
+    program_id: &Pubkey,
+    authority: &Pubkey,
+    organization: &Pubkey,
+    treasury_member: &Pubkey,
+    vault_state: &Pubkey,
+    mint: &Pubkey,
+    vault_ata: &Pubkey,
+    destination_token_account: &Pubkey,
+    amount: u64,
+    destination_wallet: Pubkey,
+) -> Instruction {
+    let accounts = accounts::WithdrawSplVaultFunds {
+        authority: *authority,
+        organization: *organization,
+        treasury_member: *treasury_member,
+        vault_state: *vault_state,
+        mint: *mint,
+        vault_ata: *vault_ata,
+        destination_token_account: *destination_token_account,
+        token_program: anchor_spl::token::ID,
+    }
+    .to_account_metas(None);
+
+    Instruction {
+        program_id: *program_id,
+        accounts,
+        data: instruction::WithdrawSplVaultFunds {
+            amount,
+            destination_wallet,
         }
         .data(),
     }

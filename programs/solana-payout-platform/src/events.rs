@@ -134,3 +134,39 @@ pub struct RecipientWalletRotated {
 
     pub rotated_at: i64,
 }
+
+#[event]
+pub struct OrganizationPauseStateChanged {
+    pub organization: Pubkey,
+
+    pub previous_paused: bool,
+    pub new_paused: bool,
+
+    pub changed_by_member: Pubkey,
+    pub changed_by_wallet: Pubkey,
+
+    pub changed_at: i64,
+}
+
+#[event]
+pub struct VaultFundsWithdrawn {
+    pub organization: Pubkey,
+    pub vault: Pubkey,
+    pub vault_id: u64,
+
+    pub mint: Pubkey,
+
+    pub destination_wallet: Pubkey,
+    pub destination_token_account: Pubkey,
+
+    pub withdrawn_by_member: Pubkey,
+    pub withdrawn_by_wallet: Pubkey,
+
+    pub amount: u64,
+
+    pub vault_balance_before: u64,
+    pub vault_balance_after: u64,
+    pub reserved_total: u64,
+
+    pub withdrawn_at: i64,
+}

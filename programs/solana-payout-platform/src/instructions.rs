@@ -10,6 +10,8 @@ pub mod initialize_organization;
 pub mod initialize_vault;
 pub mod register_recipient;
 pub mod rotate_recipient_wallet;
+pub mod set_organization_paused;
+pub mod withdraw_spl_vault_funds;
 
 pub use approve_payment::*;
 pub use cancel_payment::*;
@@ -22,3 +24,5 @@ pub use initialize_organization::*;
 pub use initialize_vault::*;
 pub use register_recipient::*;
 pub use rotate_recipient_wallet::*;
+pub use set_organization_paused::*;
+pub use withdraw_spl_vault_funds::*;

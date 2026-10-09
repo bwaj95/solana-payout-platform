@@ -175,4 +175,19 @@ pub enum ErrorCode {
 
     #[msg("The new recipient destination is the same as the current destination")]
     RecipientDestinationUnchanged,
+
+    #[msg("The organization is already in the requested pause state")]
+    OrganizationPauseStateUnchanged,
+
+    #[msg("The member does not have permission to withdraw vault funds")]
+    MissingVaultWithdrawalRole,
+
+    #[msg("Vault withdrawal amount must be greater than zero")]
+    InvalidVaultWithdrawalAmount,
+
+    #[msg("The vault withdrawal destination is invalid")]
+    InvalidVaultWithdrawalDestination,
+
+    #[msg("The withdrawal amount exceeds the vault's unreserved balance")]
+    VaultWithdrawalExceedsAvailableBalance,
 }

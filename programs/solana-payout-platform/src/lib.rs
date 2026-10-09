@@ -107,4 +107,23 @@ pub mod solana_payout_platform {
             new_destination_wallet,
         )
     }
+
+    pub fn set_organization_paused(
+        ctx: Context<SetOrganizationPaused>,
+        paused: bool,
+    ) -> Result<()> {
+        instructions::set_organization_paused::set_organization_paused_handler(ctx, paused)
+    }
+
+    pub fn withdraw_spl_vault_funds(
+        ctx: Context<WithdrawSplVaultFunds>,
+        amount: u64,
+        destination_wallet: Pubkey,
+    ) -> Result<()> {
+        instructions::withdraw_spl_vault_funds::withdraw_spl_vault_funds_handler(
+            ctx,
+            amount,
+            destination_wallet,
+        )
+    }
 }
