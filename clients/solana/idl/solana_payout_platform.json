@@ -1,0 +1,4124 @@
+{
+  "address": "5SWH7YmBC7Tiri1MQLDbnWc1yTn3QqYBC1g9H3mZgbhv",
+  "metadata": {
+    "name": "solana_payout_platform",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "approve_payment",
+      "discriminator": [
+        21,
+        123,
+        195,
+        139,
+        107,
+        141,
+        34,
+        187
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "organization",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  103,
+                  97,
+                  110,
+                  105,
+                  122,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization.creator",
+                "account": "Organization"
+              },
+              {
+                "kind": "account",
+                "path": "organization.organization_id",
+                "account": "Organization"
+              }
+            ]
+          },
+          "relations": [
+            "approver_member",
+            "vault_state",
+            "recipient",
+            "approval_policy_version",
+            "payment"
+          ]
+        },
+        {
+          "name": "approver_member",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "approver_member.member_id",
+                "account": "Member"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "vault_state.vault_id",
+                "account": "VaultState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "vault_ata",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault_state"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "recipient",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  105,
+                  112,
+                  105,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "recipient.recipient_id",
+                "account": "Recipient"
+              }
+            ]
+          }
+        },
+        {
+          "name": "approval_policy_version",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  108,
+                  105,
+                  99,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "approval_policy_version.policy_id",
+                "account": "ApprovalPolicyVersion"
+              },
+              {
+                "kind": "account",
+                "path": "approval_policy_version.version",
+                "account": "ApprovalPolicyVersion"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  121,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "payment.payment_id",
+                "account": "Payment"
+              }
+            ]
+          }
+        },
+        {
+          "name": "approval",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  112,
+                  112,
+                  114,
+                  111,
+                  118,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "payment.payment_id",
+                "account": "Payment"
+              },
+              {
+                "kind": "account",
+                "path": "payment.payment_revision",
+                "account": "Payment"
+              },
+              {
+                "kind": "account",
+                "path": "approver_member.member_id",
+                "account": "Member"
+              },
+              {
+                "kind": "account",
+                "path": "approver_member.authorization_revision",
+                "account": "Member"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "payment_id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "cancel_payment",
+      "discriminator": [
+        217,
+        129,
+        71,
+        37,
+        216,
+        193,
+        38,
+        33
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "organization",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  103,
+                  97,
+                  110,
+                  105,
+                  122,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization.creator",
+                "account": "Organization"
+              },
+              {
+                "kind": "account",
+                "path": "organization.organization_id",
+                "account": "Organization"
+              }
+            ]
+          },
+          "relations": [
+            "admin_member",
+            "vault_state",
+            "payment"
+          ]
+        },
+        {
+          "name": "admin_member",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "admin_member.member_id",
+                "account": "Member"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "vault_state.vault_id",
+                "account": "VaultState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  121,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "payment.payment_id",
+                "account": "Payment"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "payment_id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "create_member",
+      "discriminator": [
+        49,
+        46,
+        45,
+        241,
+        122,
+        143,
+        136,
+        73
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "organization",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  103,
+                  97,
+                  110,
+                  105,
+                  122,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization.creator",
+                "account": "Organization"
+              },
+              {
+                "kind": "account",
+                "path": "organization.organization_id",
+                "account": "Organization"
+              }
+            ]
+          },
+          "relations": [
+            "admin_member"
+          ]
+        },
+        {
+          "name": "admin_member",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "admin_member.member_id",
+                "account": "Member"
+              }
+            ]
+          }
+        },
+        {
+          "name": "member",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "arg",
+                "path": "member_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "member_wallet",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114,
+                  95,
+                  119,
+                  97,
+                  108,
+                  108,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "arg",
+                "path": "authorized_wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "member_id",
+          "type": "u64"
+        },
+        {
+          "name": "authorized_wallet",
+          "type": "pubkey"
+        },
+        {
+          "name": "roles",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "create_payment",
+      "discriminator": [
+        28,
+        81,
+        85,
+        253,
+        7,
+        223,
+        154,
+        42
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "organization",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  103,
+                  97,
+                  110,
+                  105,
+                  122,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization.creator",
+                "account": "Organization"
+              },
+              {
+                "kind": "account",
+                "path": "organization.organization_id",
+                "account": "Organization"
+              }
+            ]
+          },
+          "relations": [
+            "preparer_member",
+            "recipient",
+            "vault_state",
+            "approval_policy_version"
+          ]
+        },
+        {
+          "name": "preparer_member",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "preparer_member.member_id",
+                "account": "Member"
+              }
+            ]
+          }
+        },
+        {
+          "name": "recipient",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  105,
+                  112,
+                  105,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "recipient.recipient_id",
+                "account": "Recipient"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "vault_state.vault_id",
+                "account": "VaultState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "approval_policy_version",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  108,
+                  105,
+                  99,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "approval_policy_version.policy_id",
+                "account": "ApprovalPolicyVersion"
+              },
+              {
+                "kind": "account",
+                "path": "approval_policy_version.version",
+                "account": "ApprovalPolicyVersion"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  121,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "arg",
+                "path": "payment_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "payment_id",
+          "type": "u64"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "execute_after",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "create_policy_version",
+      "discriminator": [
+        32,
+        33,
+        113,
+        116,
+        239,
+        86,
+        152,
+        115
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "organization",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  103,
+                  97,
+                  110,
+                  105,
+                  122,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization.creator",
+                "account": "Organization"
+              },
+              {
+                "kind": "account",
+                "path": "organization.organization_id",
+                "account": "Organization"
+              }
+            ]
+          },
+          "relations": [
+            "admin_member"
+          ]
+        },
+        {
+          "name": "admin_member",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "admin_member.member_id",
+                "account": "Member"
+              }
+            ]
+          }
+        },
+        {
+          "name": "approval_policy_version",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  108,
+                  105,
+                  99,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "arg",
+                "path": "policy_id"
+              },
+              {
+                "kind": "arg",
+                "path": "version"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "policy_id",
+          "type": "u64"
+        },
+        {
+          "name": "version",
+          "type": "u64"
+        },
+        {
+          "name": "threshold",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "execute_spl_payment",
+      "discriminator": [
+        123,
+        191,
+        66,
+        237,
+        163,
+        25,
+        68,
+        172
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "organization",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  103,
+                  97,
+                  110,
+                  105,
+                  122,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization.creator",
+                "account": "Organization"
+              },
+              {
+                "kind": "account",
+                "path": "organization.organization_id",
+                "account": "Organization"
+              }
+            ]
+          },
+          "relations": [
+            "executor_member",
+            "vault_state",
+            "recipient",
+            "payment"
+          ]
+        },
+        {
+          "name": "executor_member",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "executor_member.member_id",
+                "account": "Member"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "vault_state.vault_id",
+                "account": "VaultState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault_state"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "recipient",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  105,
+                  112,
+                  105,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "recipient.recipient_id",
+                "account": "Recipient"
+              }
+            ]
+          }
+        },
+        {
+          "name": "destination_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "recipient.current_destination",
+                "account": "Recipient"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "payment",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  121,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "payment.payment_id",
+                "account": "Payment"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "payment_id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "finalize_payment_approval",
+      "discriminator": [
+        58,
+        30,
+        248,
+        172,
+        129,
+        44,
+        37,
+        246
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "organization",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  103,
+                  97,
+                  110,
+                  105,
+                  122,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization.creator",
+                "account": "Organization"
+              },
+              {
+                "kind": "account",
+                "path": "organization.organization_id",
+                "account": "Organization"
+              }
+            ]
+          },
+          "relations": [
+            "finalizer_member",
+            "vault_state",
+            "recipient",
+            "approval_policy_version",
+            "payment"
+          ]
+        },
+        {
+          "name": "finalizer_member",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "finalizer_member.member_id",
+                "account": "Member"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "vault_state.vault_id",
+                "account": "VaultState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "vault_ata",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault_state"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "recipient",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  105,
+                  112,
+                  105,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "recipient.recipient_id",
+                "account": "Recipient"
+              }
+            ]
+          }
+        },
+        {
+          "name": "approval_policy_version",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  108,
+                  105,
+                  99,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "approval_policy_version.policy_id",
+                "account": "ApprovalPolicyVersion"
+              },
+              {
+                "kind": "account",
+                "path": "approval_policy_version.version",
+                "account": "ApprovalPolicyVersion"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  121,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "payment.payment_id",
+                "account": "Payment"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "payment_id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize_organization",
+      "discriminator": [
+        21,
+        20,
+        253,
+        138,
+        250,
+        160,
+        119,
+        87
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "organization",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  103,
+                  97,
+                  110,
+                  105,
+                  122,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "arg",
+                "path": "organization_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_member",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "arg",
+                "path": "owner_member_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_member_wallet",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114,
+                  95,
+                  119,
+                  97,
+                  108,
+                  108,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "organization_id",
+          "type": "u64"
+        },
+        {
+          "name": "owner_member_id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize_vault",
+      "discriminator": [
+        48,
+        191,
+        163,
+        44,
+        71,
+        129,
+        63,
+        164
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "organization",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  103,
+                  97,
+                  110,
+                  105,
+                  122,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization.creator",
+                "account": "Organization"
+              },
+              {
+                "kind": "account",
+                "path": "organization.organization_id",
+                "account": "Organization"
+              }
+            ]
+          },
+          "relations": [
+            "admin_member"
+          ]
+        },
+        {
+          "name": "admin_member",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "admin_member.member_id",
+                "account": "Member"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "arg",
+                "path": "vault_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault_state"
+              },
+              {
+                "kind": "account",
+                "path": "token_program"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "vault_id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "register_recipient",
+      "discriminator": [
+        46,
+        231,
+        207,
+        112,
+        215,
+        52,
+        195,
+        125
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "organization",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  103,
+                  97,
+                  110,
+                  105,
+                  122,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization.creator",
+                "account": "Organization"
+              },
+              {
+                "kind": "account",
+                "path": "organization.organization_id",
+                "account": "Organization"
+              }
+            ]
+          },
+          "relations": [
+            "registrar_member",
+            "vault_state"
+          ]
+        },
+        {
+          "name": "registrar_member",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "registrar_member.member_id",
+                "account": "Member"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "vault_state.vault_id",
+                "account": "VaultState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "recipient",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  105,
+                  112,
+                  105,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "arg",
+                "path": "recipient_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "destination_token_account"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "recipient_id",
+          "type": "u64"
+        },
+        {
+          "name": "destination_wallet",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "rotate_recipient_wallet",
+      "discriminator": [
+        75,
+        71,
+        69,
+        204,
+        63,
+        75,
+        14,
+        66
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "organization",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  103,
+                  97,
+                  110,
+                  105,
+                  122,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization.creator",
+                "account": "Organization"
+              },
+              {
+                "kind": "account",
+                "path": "organization.organization_id",
+                "account": "Organization"
+              }
+            ]
+          },
+          "relations": [
+            "registrar_member",
+            "vault_state",
+            "recipient"
+          ]
+        },
+        {
+          "name": "registrar_member",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "registrar_member.member_id",
+                "account": "Member"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "vault_state.vault_id",
+                "account": "VaultState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "recipient",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  105,
+                  112,
+                  105,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "arg",
+                "path": "recipient_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "new_destination_token_account"
+        }
+      ],
+      "args": [
+        {
+          "name": "recipient_id",
+          "type": "u64"
+        },
+        {
+          "name": "new_destination_wallet",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "set_organization_paused",
+      "discriminator": [
+        47,
+        133,
+        163,
+        15,
+        69,
+        191,
+        17,
+        232
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "organization",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  103,
+                  97,
+                  110,
+                  105,
+                  122,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization.creator",
+                "account": "Organization"
+              },
+              {
+                "kind": "account",
+                "path": "organization.organization_id",
+                "account": "Organization"
+              }
+            ]
+          },
+          "relations": [
+            "admin_member"
+          ]
+        },
+        {
+          "name": "admin_member",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "admin_member.member_id",
+                "account": "Member"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "paused",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "withdraw_spl_vault_funds",
+      "discriminator": [
+        155,
+        38,
+        110,
+        105,
+        45,
+        201,
+        135,
+        221
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "organization",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  103,
+                  97,
+                  110,
+                  105,
+                  122,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization.creator",
+                "account": "Organization"
+              },
+              {
+                "kind": "account",
+                "path": "organization.organization_id",
+                "account": "Organization"
+              }
+            ]
+          },
+          "relations": [
+            "treasury_member",
+            "vault_state"
+          ]
+        },
+        {
+          "name": "treasury_member",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "treasury_member.member_id",
+                "account": "Member"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              },
+              {
+                "kind": "account",
+                "path": "vault_state.vault_id",
+                "account": "VaultState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "vault_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault_state"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "destination_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "destination_wallet",
+          "type": "pubkey"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Approval",
+      "discriminator": [
+        233,
+        9,
+        153,
+        49,
+        11,
+        222,
+        59,
+        130
+      ]
+    },
+    {
+      "name": "ApprovalPolicyVersion",
+      "discriminator": [
+        133,
+        194,
+        77,
+        91,
+        37,
+        113,
+        2,
+        255
+      ]
+    },
+    {
+      "name": "Member",
+      "discriminator": [
+        54,
+        19,
+        162,
+        21,
+        29,
+        166,
+        17,
+        198
+      ]
+    },
+    {
+      "name": "MemberWallet",
+      "discriminator": [
+        225,
+        26,
+        52,
+        143,
+        86,
+        46,
+        6,
+        54
+      ]
+    },
+    {
+      "name": "Organization",
+      "discriminator": [
+        145,
+        38,
+        152,
+        251,
+        91,
+        57,
+        118,
+        160
+      ]
+    },
+    {
+      "name": "Payment",
+      "discriminator": [
+        227,
+        231,
+        51,
+        26,
+        244,
+        88,
+        4,
+        148
+      ]
+    },
+    {
+      "name": "Recipient",
+      "discriminator": [
+        80,
+        186,
+        47,
+        196,
+        232,
+        251,
+        21,
+        148
+      ]
+    },
+    {
+      "name": "VaultState",
+      "discriminator": [
+        228,
+        196,
+        82,
+        165,
+        98,
+        210,
+        235,
+        152
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "MemberCreated",
+      "discriminator": [
+        119,
+        191,
+        116,
+        88,
+        44,
+        173,
+        169,
+        211
+      ]
+    },
+    {
+      "name": "OrganizationInitialized",
+      "discriminator": [
+        30,
+        255,
+        39,
+        42,
+        77,
+        225,
+        103,
+        125
+      ]
+    },
+    {
+      "name": "OrganizationPauseStateChanged",
+      "discriminator": [
+        120,
+        143,
+        239,
+        97,
+        112,
+        24,
+        203,
+        78
+      ]
+    },
+    {
+      "name": "PaymentApprovalRecorded",
+      "discriminator": [
+        188,
+        199,
+        68,
+        23,
+        124,
+        99,
+        60,
+        166
+      ]
+    },
+    {
+      "name": "PaymentApprovalThresholdReached",
+      "discriminator": [
+        208,
+        253,
+        81,
+        24,
+        88,
+        235,
+        186,
+        145
+      ]
+    },
+    {
+      "name": "PaymentCancelled",
+      "discriminator": [
+        137,
+        140,
+        226,
+        59,
+        55,
+        152,
+        253,
+        179
+      ]
+    },
+    {
+      "name": "PolicyVersionCreated",
+      "discriminator": [
+        32,
+        245,
+        162,
+        150,
+        239,
+        0,
+        42,
+        124
+      ]
+    },
+    {
+      "name": "RecipientWalletRotated",
+      "discriminator": [
+        77,
+        10,
+        127,
+        86,
+        237,
+        254,
+        122,
+        239
+      ]
+    },
+    {
+      "name": "SplPaymentExecuted",
+      "discriminator": [
+        225,
+        239,
+        175,
+        239,
+        5,
+        230,
+        7,
+        10
+      ]
+    },
+    {
+      "name": "VaultFundsWithdrawn",
+      "discriminator": [
+        246,
+        142,
+        195,
+        55,
+        184,
+        63,
+        143,
+        118
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "MemberOrganizationMismatch",
+      "msg": "The administrative member does not belong to this organization"
+    },
+    {
+      "code": 6001,
+      "name": "InactiveMember",
+      "msg": "The administrative member is inactive"
+    },
+    {
+      "code": 6002,
+      "name": "UnauthorizedWallet",
+      "msg": "The signer is not the member's authorized wallet"
+    },
+    {
+      "code": 6003,
+      "name": "MissingAdminRole",
+      "msg": "The member does not have the administrator role"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidMemberRoles",
+      "msg": "The supplied member roles are invalid"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidAuthorizedWallet",
+      "msg": "The authorized wallet cannot be the default public key"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidPolicyId",
+      "msg": "Policy ID must be greater than zero"
+    },
+    {
+      "code": 6007,
+      "name": "InvalidPolicyVersion",
+      "msg": "Policy version must be greater than zero"
+    },
+    {
+      "code": 6008,
+      "name": "EmptyPolicyMembers",
+      "msg": "The policy must contain at least one eligible member"
+    },
+    {
+      "code": 6009,
+      "name": "TooManyPolicyMembers",
+      "msg": "The policy contains too many eligible members"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidPolicyThreshold",
+      "msg": "The approval threshold is invalid"
+    },
+    {
+      "code": 6011,
+      "name": "DuplicatePolicyMember",
+      "msg": "The policy contains the same member more than once"
+    },
+    {
+      "code": 6012,
+      "name": "InvalidPolicyMember",
+      "msg": "An eligible member account is invalid"
+    },
+    {
+      "code": 6013,
+      "name": "InactivePolicyMember",
+      "msg": "An eligible policy member is inactive"
+    },
+    {
+      "code": 6014,
+      "name": "PolicyMemberMissingApproverRole",
+      "msg": "An eligible policy member does not have the approver role"
+    },
+    {
+      "code": 6015,
+      "name": "InvalidVaultId",
+      "msg": "Vault id must be greater than zero"
+    },
+    {
+      "code": 6016,
+      "name": "OrganizationPaused",
+      "msg": "The organization is paused"
+    },
+    {
+      "code": 6017,
+      "name": "MissingRecipientRegistrarRole",
+      "msg": "The member must be an admin or preparer"
+    },
+    {
+      "code": 6018,
+      "name": "InvalidRecipientId",
+      "msg": "Recipient id must be greater than zero"
+    },
+    {
+      "code": 6019,
+      "name": "InvalidRecipientDestination",
+      "msg": "Recipient destination cannot be the default public key"
+    },
+    {
+      "code": 6020,
+      "name": "VaultOrganizationMismatch",
+      "msg": "The vault does not belong to this organization"
+    },
+    {
+      "code": 6021,
+      "name": "InactiveVault",
+      "msg": "The vault is inactive"
+    },
+    {
+      "code": 6022,
+      "name": "UnsupportedVaultAsset",
+      "msg": "The vault does not support SPL token recipients"
+    },
+    {
+      "code": 6023,
+      "name": "VaultMintMismatch",
+      "msg": "The supplied mint does not match the vault mint"
+    },
+    {
+      "code": 6024,
+      "name": "RecipientTokenMintMismatch",
+      "msg": "The destination token account has the wrong mint"
+    },
+    {
+      "code": 6025,
+      "name": "RecipientTokenOwnerMismatch",
+      "msg": "The destination token account has the wrong authority"
+    },
+    {
+      "code": 6026,
+      "name": "InvalidRecipientTokenAccount",
+      "msg": "The supplied token account is not the canonical destination ATA"
+    },
+    {
+      "code": 6027,
+      "name": "InvalidPaymentId",
+      "msg": "Payment id must be greater than zero"
+    },
+    {
+      "code": 6028,
+      "name": "InvalidPaymentAmount",
+      "msg": "Payment amount must be greater than zero"
+    },
+    {
+      "code": 6029,
+      "name": "InvalidExecuteAfter",
+      "msg": "Execute-after timestamp cannot be negative"
+    },
+    {
+      "code": 6030,
+      "name": "MissingPaymentCreatorRole",
+      "msg": "The member must be an administrator or preparer"
+    },
+    {
+      "code": 6031,
+      "name": "RecipientOrganizationMismatch",
+      "msg": "The recipient does not belong to this organization"
+    },
+    {
+      "code": 6032,
+      "name": "InactiveRecipient",
+      "msg": "The recipient is inactive"
+    },
+    {
+      "code": 6033,
+      "name": "PolicyOrganizationMismatch",
+      "msg": "The policy does not belong to this organization"
+    },
+    {
+      "code": 6034,
+      "name": "InactivePolicy",
+      "msg": "The policy version is inactive"
+    },
+    {
+      "code": 6035,
+      "name": "MissingPaymentApproverRole",
+      "msg": "The member must be an administrator or approver"
+    },
+    {
+      "code": 6036,
+      "name": "MissingPaymentExecutorRole",
+      "msg": "The member does not have permission to execute payments"
+    },
+    {
+      "code": 6037,
+      "name": "MissingPaymentFinalizerRole",
+      "msg": "The member does not have permission to finalize payment approval"
+    },
+    {
+      "code": 6038,
+      "name": "InsufficientVaultBalance",
+      "msg": "The vault doesn't have enough balance to cover the payment"
+    },
+    {
+      "code": 6039,
+      "name": "PaymentTermsMismatch",
+      "msg": "The payment terms don't match"
+    },
+    {
+      "code": 6040,
+      "name": "PaymentNotAcceptingApprovals",
+      "msg": "The payment is not accepting approvals"
+    },
+    {
+      "code": 6041,
+      "name": "InvalidPaymentReservationState",
+      "msg": "The payment has an invalid reservation state for approval"
+    },
+    {
+      "code": 6042,
+      "name": "ApproverNotEligibleForPolicy",
+      "msg": "The member is not an eligible approver for this policy version"
+    },
+    {
+      "code": 6043,
+      "name": "UnsupportedSettlementRail",
+      "msg": "The payment settlement rail is not supported"
+    },
+    {
+      "code": 6044,
+      "name": "InvalidRemainingApprovalAccounts",
+      "msg": "Remaining approval accounts must be Approval and Member pairs"
+    },
+    {
+      "code": 6045,
+      "name": "TooManyApprovalAccounts",
+      "msg": "Too many approval witness accounts were supplied"
+    },
+    {
+      "code": 6046,
+      "name": "InvalidApprovalAccount",
+      "msg": "The supplied Approval account is invalid"
+    },
+    {
+      "code": 6047,
+      "name": "InvalidMemberAccount",
+      "msg": "The supplied Member account is invalid"
+    },
+    {
+      "code": 6048,
+      "name": "DuplicateApprovalMember",
+      "msg": "The same member cannot be counted more than once"
+    },
+    {
+      "code": 6049,
+      "name": "ApprovalThresholdNotMet",
+      "msg": "The valid approval count has not reached the policy threshold"
+    },
+    {
+      "code": 6050,
+      "name": "VaultReservationInvariantViolation",
+      "msg": "The vault reserved total exceeds its token balance"
+    },
+    {
+      "code": 6051,
+      "name": "ArithmeticOverflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6052,
+      "name": "InvalidPaymentApprovalState",
+      "msg": "The payment has an invalid approval state for execution"
+    },
+    {
+      "code": 6053,
+      "name": "InvalidPaymentReservationExecutionState",
+      "msg": "The payment has an invalid reservation state for execution"
+    },
+    {
+      "code": 6054,
+      "name": "ExecutionTimeNotReached",
+      "msg": "Need to hit the execution time to make the payment"
+    },
+    {
+      "code": 6055,
+      "name": "VaultReservationInsufficient",
+      "msg": "The vault reserved total is insufficient to make the payment"
+    },
+    {
+      "code": 6056,
+      "name": "InvalidPaymentCancellationState",
+      "msg": "The payment cannot be cancelled from its current payment and reservation states"
+    },
+    {
+      "code": 6057,
+      "name": "RecipientDestinationUnchanged",
+      "msg": "The new recipient destination is the same as the current destination"
+    },
+    {
+      "code": 6058,
+      "name": "OrganizationPauseStateUnchanged",
+      "msg": "The organization is already in the requested pause state"
+    },
+    {
+      "code": 6059,
+      "name": "MissingVaultWithdrawalRole",
+      "msg": "The member does not have permission to withdraw vault funds"
+    },
+    {
+      "code": 6060,
+      "name": "InvalidVaultWithdrawalAmount",
+      "msg": "Vault withdrawal amount must be greater than zero"
+    },
+    {
+      "code": 6061,
+      "name": "InvalidVaultWithdrawalDestination",
+      "msg": "The vault withdrawal destination is invalid"
+    },
+    {
+      "code": 6062,
+      "name": "VaultWithdrawalExceedsAvailableBalance",
+      "msg": "The withdrawal amount exceeds the vault's unreserved balance"
+    }
+  ],
+  "types": [
+    {
+      "name": "Approval",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization",
+            "type": "pubkey"
+          },
+          {
+            "name": "payment",
+            "type": "pubkey"
+          },
+          {
+            "name": "payment_revision",
+            "type": "u32"
+          },
+          {
+            "name": "policy",
+            "type": "pubkey"
+          },
+          {
+            "name": "member",
+            "type": "pubkey"
+          },
+          {
+            "name": "member_authorization_revision",
+            "type": "u64"
+          },
+          {
+            "name": "authorization_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "approved_at",
+            "type": "i64"
+          },
+          {
+            "name": "terms_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ApprovalPolicyVersion",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization",
+            "type": "pubkey"
+          },
+          {
+            "name": "policy_id",
+            "type": "u64"
+          },
+          {
+            "name": "version",
+            "type": "u64"
+          },
+          {
+            "name": "created_by_member",
+            "type": "pubkey"
+          },
+          {
+            "name": "eligible_members",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "threshold",
+            "type": "u8"
+          },
+          {
+            "name": "enabled",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Asset",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "NativeSol"
+          },
+          {
+            "name": "Spl",
+            "fields": [
+              {
+                "name": "mint",
+                "type": "pubkey"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Member",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization",
+            "type": "pubkey"
+          },
+          {
+            "name": "member_id",
+            "type": "u64"
+          },
+          {
+            "name": "authorized_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "authorization_revision",
+            "type": "u64"
+          },
+          {
+            "name": "roles",
+            "type": "u16"
+          },
+          {
+            "name": "active",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MemberCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization",
+            "type": "pubkey"
+          },
+          {
+            "name": "member",
+            "type": "pubkey"
+          },
+          {
+            "name": "member_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "member_id",
+            "type": "u64"
+          },
+          {
+            "name": "authorized_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "roles",
+            "type": "u16"
+          },
+          {
+            "name": "created_by_member",
+            "type": "pubkey"
+          },
+          {
+            "name": "created_by_wallet",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MemberWallet",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization",
+            "type": "pubkey"
+          },
+          {
+            "name": "member",
+            "type": "pubkey"
+          },
+          {
+            "name": "authorized_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Organization",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization_id",
+            "type": "u64"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner_member",
+            "type": "pubkey"
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OrganizationInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization",
+            "type": "pubkey"
+          },
+          {
+            "name": "organization_id",
+            "type": "u64"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner_member",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner_member_id",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OrganizationPauseStateChanged",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization",
+            "type": "pubkey"
+          },
+          {
+            "name": "previous_paused",
+            "type": "bool"
+          },
+          {
+            "name": "new_paused",
+            "type": "bool"
+          },
+          {
+            "name": "changed_by_member",
+            "type": "pubkey"
+          },
+          {
+            "name": "changed_by_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "changed_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Payment",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization",
+            "type": "pubkey"
+          },
+          {
+            "name": "payment_id",
+            "type": "u64"
+          },
+          {
+            "name": "created_by",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient",
+            "type": "pubkey"
+          },
+          {
+            "name": "destination",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient_wallet_revision",
+            "type": "u32"
+          },
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "policy_version",
+            "type": "pubkey"
+          },
+          {
+            "name": "payment_revision",
+            "type": "u32"
+          },
+          {
+            "name": "settlement_rail",
+            "type": {
+              "defined": {
+                "name": "SettlementRail"
+              }
+            }
+          },
+          {
+            "name": "execute_after",
+            "type": "i64"
+          },
+          {
+            "name": "terms_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "payment_state",
+            "type": {
+              "defined": {
+                "name": "PaymentState"
+              }
+            }
+          },
+          {
+            "name": "reservation_state",
+            "type": {
+              "defined": {
+                "name": "ReservationState"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PaymentApprovalRecorded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization",
+            "type": "pubkey"
+          },
+          {
+            "name": "payment",
+            "type": "pubkey"
+          },
+          {
+            "name": "approval",
+            "type": "pubkey"
+          },
+          {
+            "name": "approver_member",
+            "type": "pubkey"
+          },
+          {
+            "name": "authorization_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "payment_revision",
+            "type": "u32"
+          },
+          {
+            "name": "member_authorization_revision",
+            "type": "u64"
+          },
+          {
+            "name": "policy_version",
+            "type": "pubkey"
+          },
+          {
+            "name": "terms_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "approved_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PaymentApprovalThresholdReached",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization",
+            "type": "pubkey"
+          },
+          {
+            "name": "payment",
+            "type": "pubkey"
+          },
+          {
+            "name": "policy_version",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "triggered_by_member",
+            "type": "pubkey"
+          },
+          {
+            "name": "valid_approval_count",
+            "type": "u8"
+          },
+          {
+            "name": "threshold",
+            "type": "u8"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "funds_reserved",
+            "type": "bool"
+          },
+          {
+            "name": "vault_reserved_total",
+            "type": "u64"
+          },
+          {
+            "name": "payment_state",
+            "type": {
+              "defined": {
+                "name": "PaymentState"
+              }
+            }
+          },
+          {
+            "name": "processed_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PaymentCancelled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization",
+            "type": "pubkey"
+          },
+          {
+            "name": "payment",
+            "type": "pubkey"
+          },
+          {
+            "name": "payment_id",
+            "type": "u64"
+          },
+          {
+            "name": "payment_revision",
+            "type": "u32"
+          },
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "cancelled_by_member",
+            "type": "pubkey"
+          },
+          {
+            "name": "cancelled_by_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "previous_payment_state",
+            "type": {
+              "defined": {
+                "name": "PaymentState"
+              }
+            }
+          },
+          {
+            "name": "previous_reservation_state",
+            "type": {
+              "defined": {
+                "name": "ReservationState"
+              }
+            }
+          },
+          {
+            "name": "final_reservation_state",
+            "type": {
+              "defined": {
+                "name": "ReservationState"
+              }
+            }
+          },
+          {
+            "name": "released_amount",
+            "type": "u64"
+          },
+          {
+            "name": "remaining_reserved_total",
+            "type": "u64"
+          },
+          {
+            "name": "cancelled_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PaymentState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "PendingApproval"
+          },
+          {
+            "name": "AwaitingFunds"
+          },
+          {
+            "name": "Approved"
+          },
+          {
+            "name": "Paid"
+          },
+          {
+            "name": "Cancelled"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PolicyVersionCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization",
+            "type": "pubkey"
+          },
+          {
+            "name": "policy_version",
+            "type": "pubkey"
+          },
+          {
+            "name": "policy_id",
+            "type": "u64"
+          },
+          {
+            "name": "version",
+            "type": "u64"
+          },
+          {
+            "name": "threshold",
+            "type": "u8"
+          },
+          {
+            "name": "eligible_member_count",
+            "type": "u8"
+          },
+          {
+            "name": "created_by_member",
+            "type": "pubkey"
+          },
+          {
+            "name": "created_by_wallet",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Recipient",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient_id",
+            "type": "u64"
+          },
+          {
+            "name": "current_destination",
+            "type": "pubkey"
+          },
+          {
+            "name": "wallet_revision",
+            "type": "u32"
+          },
+          {
+            "name": "active",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RecipientWalletRotated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient_id",
+            "type": "u64"
+          },
+          {
+            "name": "previous_destination",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_destination",
+            "type": "pubkey"
+          },
+          {
+            "name": "previous_wallet_revision",
+            "type": "u32"
+          },
+          {
+            "name": "new_wallet_revision",
+            "type": "u32"
+          },
+          {
+            "name": "rotated_by_member",
+            "type": "pubkey"
+          },
+          {
+            "name": "rotated_by_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "rotated_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ReservationState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "Held"
+          },
+          {
+            "name": "Consumed"
+          },
+          {
+            "name": "Released"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SettlementRail",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "PublicSol"
+          },
+          {
+            "name": "PublicSpl"
+          },
+          {
+            "name": "PrivateMagicBlock"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SplPaymentExecuted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization",
+            "type": "pubkey"
+          },
+          {
+            "name": "payment",
+            "type": "pubkey"
+          },
+          {
+            "name": "payment_id",
+            "type": "u64"
+          },
+          {
+            "name": "payment_revision",
+            "type": "u32"
+          },
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient",
+            "type": "pubkey"
+          },
+          {
+            "name": "destination_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "destination_token_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "executor_member",
+            "type": "pubkey"
+          },
+          {
+            "name": "executor_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "remaining_reserved_total",
+            "type": "u64"
+          },
+          {
+            "name": "executed_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VaultFundsWithdrawn",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault_id",
+            "type": "u64"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "destination_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "destination_token_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "withdrawn_by_member",
+            "type": "pubkey"
+          },
+          {
+            "name": "withdrawn_by_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "vault_balance_before",
+            "type": "u64"
+          },
+          {
+            "name": "vault_balance_after",
+            "type": "u64"
+          },
+          {
+            "name": "reserved_total",
+            "type": "u64"
+          },
+          {
+            "name": "withdrawn_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VaultState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "organization",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault_id",
+            "type": "u64"
+          },
+          {
+            "name": "asset",
+            "type": {
+              "defined": {
+                "name": "Asset"
+              }
+            }
+          },
+          {
+            "name": "reserved_total",
+            "type": "u64"
+          },
+          {
+            "name": "active",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "ORGANIZATION_SEED",
+      "type": "bytes",
+      "value": "[111, 114, 103, 97, 110, 105, 122, 97, 116, 105, 111, 110]"
+    }
+  ]
+}
