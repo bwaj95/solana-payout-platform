@@ -43,34 +43,7 @@ This program models those controls directly on-chain:
 
 ## Architecture
 
-```mermaid
-flowchart TB
-    Users["Company wallets<br/>Admin · Preparer · Approver · Executor"]
-    Client["TypeScript client<br/>PDA derivation · transaction construction"]
-    Program["Anchor payout program<br/>authorization · validation · state transitions"]
-
-    subgraph State["Organization-scoped on-chain state"]
-        direction TB
-        Org["Organization PDA"]
-        Members["Member PDAs<br/>MemberWallet indexes"]
-        Operations["Recipients, Policies,<br/>Payments, Approvals"]
-        Vault["VaultState PDA<br/>Vault SPL ATA"]
-
-        Org --> Members
-        Org --> Operations
-        Org --> Vault
-    end
-
-    Token["SPL Token Program<br/>TransferChecked"]
-    Destination["Recipient canonical ATA"]
-
-    Users --> Client
-    Client --> Program
-    Program --> State
-    Program --> Token
-    Vault --> Token
-    Token --> Destination
-```
+![Solana Payout Platform architecture](docs/architecture-overview.svg)
 
 The TypeScript client derives every required PDA and submits explicitly named accounts. Anchor validates declared accounts, while the handlers independently validate dynamic policy and approval witness accounts. The vault PDA owns its canonical token account and signs the final `TransferChecked` CPI with program-derived signer seeds.
 
@@ -78,34 +51,7 @@ The TypeScript client derives every required PDA and submits explicitly named ac
 
 Each state box below shows the two independent state fields stored in the Payment account: `PaymentState` describes the payment's business lifecycle, while `ReservationState` describes what happened to its reserved vault funds.
 
-```mermaid
-flowchart TD
-    Create["Create payment<br/>PaymentState: PendingApproval<br/>ReservationState: None"]
-    Approve["Eligible members approve<br/>exact terms hash"]
-    Threshold{"Threshold reached?"}
-    Pending["PaymentState: PendingApproval<br/>ReservationState: None"]
-    Liquidity{"Unreserved liquidity<br/>covers amount?"}
-    Awaiting["PaymentState: AwaitingFunds<br/>ReservationState: None"]
-    Finalize["Fund vault and finalize"]
-    Reserved["PaymentState: Approved<br/>ReservationState: Held<br/>amount added to reserved_total"]
-    Execute["Executor sends SPL tokens"]
-    Paid["PaymentState: Paid<br/>ReservationState: Consumed<br/>reservation removed"]
-    Cancel["PaymentState: Cancelled<br/>ReservationState: Released if held<br/>otherwise None"]
-
-    Create --> Approve
-    Approve --> Threshold
-    Threshold -- No --> Pending
-    Threshold -- Yes --> Liquidity
-    Liquidity -- No --> Awaiting
-    Awaiting --> Finalize
-    Finalize --> Reserved
-    Liquidity -- Yes --> Reserved
-    Reserved --> Execute
-    Execute --> Paid
-    Create --> Cancel
-    Awaiting --> Cancel
-    Reserved --> Cancel
-```
+![Payment and reservation state lifecycle](docs/payment-lifecycle.svg)
 
 Approval and reservation happen atomically when the threshold becomes visible. If the vault lacks available funds, approvals remain recorded and the payment moves to `AwaitingFunds`; an authorized finalizer can retry reservation after funding. Execution consumes the reservation and payment state in the same transaction as the SPL transfer.
 
