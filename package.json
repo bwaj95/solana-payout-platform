@@ -3,7 +3,8 @@
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
-    "devnet:smoke": "tsx scripts/devnet-smoke.ts"
+    "devnet:smoke": "tsx scripts/devnet-smoke.ts",
+    "devnet:e2e": "tsx scripts/devnet-payment-flow.ts"
   },
   "dependencies": {
     "@anchor-lang/core": "^1.0.2",
