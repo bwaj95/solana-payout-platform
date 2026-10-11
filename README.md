@@ -57,6 +57,8 @@ Approval and reservation happen atomically when the threshold becomes visible. I
 
 ## PDA account model
 
+![Solana Payout Platform Accounts](docs/Solana-Payout-Platform-Accounts.png)
+
 All business state is namespaced by the organization PDA.
 
 | Account               | PDA seeds                                                                                 | Purpose                                                                   |
