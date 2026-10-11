@@ -2,9 +2,9 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, TokenAccount};
 
 use crate::{
-    error::ErrorCode, Asset, Member, Organization, Recipient, VaultState,
-    INITIAL_RECIPIENT_WALLET_REVISION, MEMBER_SEED, ORGANIZATION_SEED, RECIPIENT_SEED, ROLE_ADMIN,
-    ROLE_PREPARER, VAULT_SEED,
+    error::ErrorCode, events::RecipientRegistered, Asset, Member, Organization, Recipient,
+    VaultState, INITIAL_RECIPIENT_WALLET_REVISION, MEMBER_SEED, ORGANIZATION_SEED, RECIPIENT_SEED,
+    ROLE_ADMIN, ROLE_PREPARER, VAULT_SEED,
 };
 
 #[derive(Accounts)]
@@ -142,6 +142,20 @@ pub fn register_recipient_handler(
         wallet_revision: INITIAL_RECIPIENT_WALLET_REVISION,
         active: true,
         bump: ctx.bumps.recipient,
+    });
+
+    let registered_at = Clock::get()?.unix_timestamp;
+
+    emit!(RecipientRegistered {
+        organization: ctx.accounts.organization.key(),
+        recipient: ctx.accounts.recipient.key(),
+        recipient_id,
+        destination_wallet,
+        destination_token_account: ctx.accounts.destination_token_account.key(),
+        wallet_revision: ctx.accounts.recipient.wallet_revision,
+        registered_by_member: ctx.accounts.registrar_member.key(),
+        registered_by_wallet: ctx.accounts.authority.key(),
+        registered_at,
     });
 
     Ok(())

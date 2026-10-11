@@ -1,10 +1,11 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    compute_payment_terms_hash, error::ErrorCode, ApprovalPolicyVersion, Asset, Member,
-    Organization, Payment, PaymentState, Recipient, ReservationState, SettlementRail, VaultState,
-    INITIAL_PAYMENT_REVISION, MAX_POLICY_MEMBERS, MEMBER_SEED, ORGANIZATION_SEED, PAYMENT_SEED,
-    POLICY_SEED, RECIPIENT_SEED, ROLE_ADMIN, ROLE_PREPARER, VAULT_SEED,
+    compute_payment_terms_hash, error::ErrorCode, events::PaymentCreated, ApprovalPolicyVersion,
+    Asset, Member, Organization, Payment, PaymentState, Recipient, ReservationState,
+    SettlementRail, VaultState, INITIAL_PAYMENT_REVISION, MAX_POLICY_MEMBERS, MEMBER_SEED,
+    ORGANIZATION_SEED, PAYMENT_SEED, POLICY_SEED, RECIPIENT_SEED, ROLE_ADMIN, ROLE_PREPARER,
+    VAULT_SEED,
 };
 
 #[derive(Accounts)]
@@ -188,6 +189,30 @@ pub fn create_payment_handler(
         payment_state: PaymentState::PendingApproval,
         reservation_state: ReservationState::None,
         bump: ctx.bumps.payment,
+    });
+
+    let created_at = Clock::get()?.unix_timestamp;
+
+    emit!(PaymentCreated {
+        organization,
+        payment: ctx.accounts.payment.key(),
+        payment_id,
+        payment_revision,
+        created_by_member: ctx.accounts.preparer_member.key(),
+        created_by_wallet: ctx.accounts.authority.key(),
+        recipient,
+        destination_wallet: destination,
+        recipient_wallet_revision,
+        vault,
+        mint,
+        policy_version,
+        amount,
+        settlement_rail,
+        execute_after,
+        terms_hash,
+        payment_state: PaymentState::PendingApproval,
+        reservation_state: ReservationState::None,
+        created_at,
     });
 
     Ok(())

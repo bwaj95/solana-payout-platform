@@ -1,4 +1,4 @@
-use crate::{PaymentState, ReservationState};
+use crate::{PaymentState, ReservationState, SettlementRail};
 use anchor_lang::prelude::*;
 
 #[event]
@@ -169,4 +169,64 @@ pub struct VaultFundsWithdrawn {
     pub reserved_total: u64,
 
     pub withdrawn_at: i64,
+}
+
+#[event]
+pub struct VaultInitialized {
+    pub organization: Pubkey,
+    pub vault: Pubkey,
+    pub vault_id: u64,
+
+    pub mint: Pubkey,
+    pub vault_token_account: Pubkey,
+
+    pub initialized_by_member: Pubkey,
+    pub initialized_by_wallet: Pubkey,
+
+    pub initialized_at: i64,
+}
+
+#[event]
+pub struct RecipientRegistered {
+    pub organization: Pubkey,
+    pub recipient: Pubkey,
+    pub recipient_id: u64,
+
+    pub destination_wallet: Pubkey,
+    pub destination_token_account: Pubkey,
+    pub wallet_revision: u32,
+
+    pub registered_by_member: Pubkey,
+    pub registered_by_wallet: Pubkey,
+
+    pub registered_at: i64,
+}
+
+#[event]
+pub struct PaymentCreated {
+    pub organization: Pubkey,
+    pub payment: Pubkey,
+    pub payment_id: u64,
+    pub payment_revision: u32,
+
+    pub created_by_member: Pubkey,
+    pub created_by_wallet: Pubkey,
+
+    pub recipient: Pubkey,
+    pub destination_wallet: Pubkey,
+    pub recipient_wallet_revision: u32,
+
+    pub vault: Pubkey,
+    pub mint: Pubkey,
+    pub policy_version: Pubkey,
+
+    pub amount: u64,
+    pub settlement_rail: SettlementRail,
+    pub execute_after: i64,
+    pub terms_hash: [u8; 32],
+
+    pub payment_state: PaymentState,
+    pub reservation_state: ReservationState,
+
+    pub created_at: i64,
 }

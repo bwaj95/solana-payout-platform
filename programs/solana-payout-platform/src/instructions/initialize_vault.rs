@@ -5,8 +5,8 @@ use anchor_spl::{
 };
 
 use crate::{
-    error::ErrorCode, Asset, Member, Organization, VaultState, MEMBER_SEED, ORGANIZATION_SEED,
-    ROLE_ADMIN, VAULT_SEED,
+    error::ErrorCode, events::VaultInitialized, Asset, Member, Organization, VaultState,
+    MEMBER_SEED, ORGANIZATION_SEED, ROLE_ADMIN, VAULT_SEED,
 };
 
 #[derive(Accounts)]
@@ -83,6 +83,19 @@ pub fn initialize_vault_handler(ctx: Context<InitializeVault>, vault_id: u64) ->
         reserved_total: 0,
         active: true,
         bump: ctx.bumps.vault_state,
+    });
+
+    let initialized_at = Clock::get()?.unix_timestamp;
+
+    emit!(VaultInitialized {
+        organization: ctx.accounts.organization.key(),
+        vault: ctx.accounts.vault_state.key(),
+        vault_id,
+        mint: ctx.accounts.mint.key(),
+        vault_token_account: ctx.accounts.vault_token_account.key(),
+        initialized_by_member: ctx.accounts.admin_member.key(),
+        initialized_by_wallet: ctx.accounts.authority.key(),
+        initialized_at,
     });
 
     Ok(())
