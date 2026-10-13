@@ -1,0 +1,82 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            cluster,\n            program_id,\n            organization_pda,\n            creator_wallet,\n            owner_member_pda,\n            paused,\n            bump,\n            observed_slot,\n            observed_commitment,\n            first_observed_at,\n            last_synced_at\n        FROM organization_chain_accounts\n        WHERE organization_id = $1\n        ORDER BY cluster, program_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "cluster",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "program_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "organization_pda",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "creator_wallet",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "owner_member_pda",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "paused",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "bump",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 7,
+        "name": "observed_slot",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "observed_commitment",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "first_observed_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "last_synced_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Numeric"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "7f0ba6e66d8738aa2f1359faa7ec694a12d8ef823ddd21df359b6e1b313aa292"
+}
