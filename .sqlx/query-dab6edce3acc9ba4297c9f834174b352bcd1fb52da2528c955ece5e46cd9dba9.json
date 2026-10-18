@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO organizations (\n            name,\n            status\n        )\n        VALUES (\n            $1,\n            'draft'\n        )\n        RETURNING\n            organization_id,\n            name,\n            status,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        INSERT INTO organizations (\n            name,\n            status\n        )\n        VALUES (\n            $1,\n            $2\n        )\n        RETURNING\n            organization_id,\n            name,\n            status,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -31,6 +31,7 @@
     ],
     "parameters": {
       "Left": [
+        "Text",
         "Text"
       ]
     },
@@ -42,5 +43,5 @@
       false
     ]
   },
-  "hash": "709300a2dbc61e766d898089a0d49098c3fbb99922dc2e0d16b2ee127169628d"
+  "hash": "dab6edce3acc9ba4297c9f834174b352bcd1fb52da2528c955ece5e46cd9dba9"
 }

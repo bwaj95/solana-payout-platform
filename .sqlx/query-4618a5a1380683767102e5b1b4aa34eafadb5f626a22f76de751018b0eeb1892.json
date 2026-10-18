@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE wallet_auth_challenges\n        SET consumed_at = $2\n        WHERE challenge_id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4618a5a1380683767102e5b1b4aa34eafadb5f626a22f76de751018b0eeb1892"
+}

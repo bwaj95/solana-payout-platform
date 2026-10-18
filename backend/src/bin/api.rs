@@ -13,7 +13,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .connect(&config.database_url)
         .await?;
 
-    let state = AppState::new(db);
+    let state = AppState::new(
+        db,
+        config.solana_cluster.clone(),
+        config.solana_rpc_url.clone(),
+        config.solana_program_id.clone(),
+    );
     let app = build_router(state);
 
     let listener = TcpListener::bind(config.bind_address).await?;

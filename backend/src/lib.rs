@@ -4,6 +4,8 @@ use serde::Serialize;
 pub mod config;
 pub mod state;
 
+mod auth;
+mod domain;
 mod error;
 mod organizations;
 
@@ -20,6 +22,7 @@ pub fn build_router(state: AppState) -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/ready", get(ready))
+        .merge(auth::router())
         .merge(organizations::router())
         .with_state(state)
 }

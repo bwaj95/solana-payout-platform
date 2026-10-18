@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO wallet_sessions (\n            session_id,\n            token_hash,\n            wallet_address,\n            expires_at\n        )\n        VALUES ($1, $2, $3, $4)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bytea",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5268d478d4859f9c50ced9bab37407b0844f6cd0abc64bba7d33b49ec573301f"
+}

@@ -7,9 +7,14 @@ use axum::{
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::{PgConnection, PgPool};
 
-use crate::{AppState, error::AppError};
+use crate::{
+    AppState,
+    auth::AuthenticatedWallet,
+    domain::{INITIAL_OWNER_ROLES, LifecycleStatus},
+    error::AppError,
+};
 
 #[derive(Debug)]
 pub struct OrganizationRow {
@@ -20,7 +25,7 @@ pub struct OrganizationRow {
     updated_at: DateTime<Utc>,
 }
 
-#[derive(Serialize)] // waht are these
+#[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrganizationResponse {
     organization_id: String,
@@ -34,6 +39,8 @@ pub struct OrganizationResponse {
 #[serde(rename_all = "camelCase")]
 pub struct CreateOrganizationRequest {
     name: String,
+    owner_display_name: String,
+    owner_external_reference: Option<String>,
 }
 
 // FromRow: database row → internal Rust database struct.
@@ -107,6 +114,56 @@ pub struct OrganizationDetailResponse {
     chain_accounts: Vec<OrganizationChainAccountResponse>,
 }
 
+#[derive(Debug)]
+struct OrganizationMemberRow {
+    organization_id: BigDecimal,
+    member_id: BigDecimal,
+    display_name: String,
+    external_reference: Option<String>,
+    requested_authorized_wallet: String,
+    requested_roles: i32,
+    lifecycle_status: String,
+    created_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct OrganizationMemberResponse {
+    organization_id: String,
+    member_id: String,
+    display_name: String,
+    external_reference: Option<String>,
+    requested_authorized_wallet: String,
+    requested_roles: i32,
+    lifecycle_status: String,
+    created_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
+}
+
+impl From<OrganizationMemberRow> for OrganizationMemberResponse {
+    fn from(row: OrganizationMemberRow) -> Self {
+        Self {
+            organization_id: row.organization_id.to_string(),
+            member_id: row.member_id.to_string(),
+            display_name: row.display_name,
+            external_reference: row.external_reference,
+            requested_authorized_wallet: row.requested_authorized_wallet,
+            requested_roles: row.requested_roles,
+            lifecycle_status: row.lifecycle_status,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateOrganizationResponse {
+    organization: OrganizationResponse,
+    owner_member: OrganizationMemberResponse,
+}
+
 // organizations router
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -116,7 +173,7 @@ pub fn router() -> Router<AppState> {
         )
         .route(
             "/api/v1/organizations/{organization_id}",
-            get(get_organization), // error here
+            get(get_organization),
         )
 }
 
@@ -131,18 +188,61 @@ async fn list_organizations(
 }
 
 async fn create_organization(
+    authenticated_wallet: AuthenticatedWallet,
     State(state): State<AppState>,
     Json(request): Json<CreateOrganizationRequest>,
-) -> Result<(StatusCode, Json<OrganizationResponse>), AppError> {
-    let name = request.name.trim();
+) -> Result<(StatusCode, Json<CreateOrganizationResponse>), AppError> {
+    let organization_name = request.name.trim().to_owned();
 
-    if name.is_empty() || name.chars().count() > 120 {
+    if organization_name.is_empty() || organization_name.chars().count() > 120 {
         return Err(AppError::InvalidOrganizationName);
     }
 
-    let row = insert_organization(&state.db, name).await?;
+    let owner_display_name = request.owner_display_name.trim().to_owned();
 
-    Ok((StatusCode::CREATED, Json(OrganizationResponse::from(row))))
+    if owner_display_name.is_empty() || owner_display_name.chars().count() > 120 {
+        return Err(AppError::InvalidMemberDisplayName);
+    }
+    let owner_external_reference = match request.owner_external_reference {
+        None => None,
+
+        Some(value) => {
+            let value = value.trim().to_owned();
+
+            if value.is_empty() || value.chars().count() > 120 {
+                return Err(AppError::InvalidMemberExternalReference);
+            }
+
+            Some(value)
+        }
+    };
+
+    // Atomically create the Organization and the Owner Member in a single transaction
+    let mut transaction = state.db.begin().await?;
+
+    let organization: OrganizationRow =
+        insert_organization(&mut transaction, &organization_name).await?;
+
+    let owner_member: OrganizationMemberRow = insert_owner_member(
+        &mut transaction,
+        &organization.organization_id,
+        &owner_display_name,
+        owner_external_reference.as_deref(),
+        &authenticated_wallet.wallet_address,
+    )
+    .await?;
+
+    transaction.commit().await?;
+
+    let organization = OrganizationResponse::from(organization);
+    let owner_member = OrganizationMemberResponse::from(owner_member);
+
+    let response = Json(CreateOrganizationResponse {
+        organization,
+        owner_member,
+    });
+
+    Ok((StatusCode::CREATED, response))
 }
 
 async fn get_organization(
@@ -187,7 +287,10 @@ async fn fetch_organizations(pool: &PgPool) -> Result<Vec<OrganizationRow>, sqlx
     .await
 }
 
-async fn insert_organization(pool: &PgPool, name: &str) -> Result<OrganizationRow, sqlx::Error> {
+async fn insert_organization(
+    connection: &mut PgConnection,
+    name: &str,
+) -> Result<OrganizationRow, sqlx::Error> {
     sqlx::query_as!(
         OrganizationRow,
         r#"
@@ -197,7 +300,7 @@ async fn insert_organization(pool: &PgPool, name: &str) -> Result<OrganizationRo
         )
         VALUES (
             $1,
-            'draft'
+            $2
         )
         RETURNING
             organization_id,
@@ -207,8 +310,9 @@ async fn insert_organization(pool: &PgPool, name: &str) -> Result<OrganizationRo
             updated_at
         "#,
         name,
+        LifecycleStatus::Draft.as_str()
     )
-    .fetch_one(pool)
+    .fetch_one(connection)
     .await
 }
 
@@ -264,5 +368,53 @@ async fn fetch_organization_chain_accounts(
         organization_id,
     )
     .fetch_all(pool)
+    .await
+}
+
+async fn insert_owner_member(
+    connection: &mut PgConnection,
+    organization_id: &BigDecimal,
+    display_name: &str,
+    external_reference: Option<&str>,
+    authorized_wallet: &str,
+) -> Result<OrganizationMemberRow, sqlx::Error> {
+    sqlx::query_as!(
+        OrganizationMemberRow,
+        r#"
+        INSERT INTO organization_members (
+            organization_id,
+            display_name,
+            external_reference,
+            requested_authorized_wallet,
+            requested_roles,
+            lifecycle_status
+        )
+        VALUES (
+            $1,
+            $2,
+            $3,
+            $4,
+            $5,
+            $6
+        )
+        RETURNING
+            organization_id,
+            member_id,
+            display_name,
+            external_reference,
+            requested_authorized_wallet,
+            requested_roles,
+            lifecycle_status,
+            created_at,
+            updated_at
+        "#,
+        organization_id,
+        display_name,
+        external_reference,
+        authorized_wallet,
+        INITIAL_OWNER_ROLES,
+        LifecycleStatus::Draft.as_str()
+    )
+    .fetch_one(connection)
     .await
 }
