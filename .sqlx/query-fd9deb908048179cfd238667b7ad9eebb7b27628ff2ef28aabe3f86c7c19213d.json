@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT member_id, requested_authorized_wallet, lifecycle_status\n        FROM organization_members\n        WHERE organization_id = $1 AND (requested_roles & $2) <> 0\n        FOR UPDATE\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "member_id",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 1,
+        "name": "requested_authorized_wallet",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "lifecycle_status",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Numeric",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "fd9deb908048179cfd238667b7ad9eebb7b27628ff2ef28aabe3f86c7c19213d"
+}

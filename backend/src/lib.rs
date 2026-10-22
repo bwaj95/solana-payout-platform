@@ -7,6 +7,7 @@ pub mod state;
 mod auth;
 mod domain;
 mod error;
+mod organization_initialization;
 mod organizations;
 
 pub use config::Config;
@@ -24,6 +25,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/ready", get(ready))
         .merge(auth::router())
         .merge(organizations::router())
+        .merge(organization_initialization::router())
         .with_state(state)
 }
 

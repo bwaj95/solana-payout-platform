@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { randomUUID } from "node:crypto";
 
 import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
@@ -62,6 +63,31 @@ type OrganizationMemberResponse = {
 type OrganizationProvisioningResponse = {
   organization: OrganizationResponse;
   ownerMember: OrganizationMemberResponse;
+};
+
+type InitializationSubmissionRequest = {
+  idempotencyKey: string;
+  transactionSignature: string;
+  lastValidBlockHeight: number;
+  submissionStatus: "submitted" | "unknown";
+};
+
+type InitializationSubmissionResponse = {
+  submissionId: number;
+  idempotencyKey: string;
+
+  organizationId: string;
+  ownerMemberId: string;
+
+  organizationStatus: string;
+  ownerMemberStatus: string;
+
+  transactionSignature: string;
+  lastValidBlockHeight: number;
+  submissionStatus: string;
+
+  createdAt: string;
+  updatedAt: string;
 };
 
 async function loadKeypair(): Promise<Keypair> {
@@ -279,6 +305,81 @@ async function verifyUnauthenticatedOrganizationCreationIsRejected(): Promise<vo
   );
 }
 
+async function recordInitializationSubmission(input: {
+  accessToken: string;
+  organizationId: string;
+  request: InitializationSubmissionRequest;
+}): Promise<InitializationSubmissionResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/v1/organizations/${input.organizationId}/initialization-submissions`,
+    {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${input.accessToken}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(input.request),
+    }
+  );
+
+  const body = (await response.json()) as
+    | InitializationSubmissionResponse
+    | ErrorResponse;
+
+  if (response.status !== 202) {
+    throw new Error(
+      `Initialization submission failed (${response.status}): ${JSON.stringify(
+        body
+      )}`
+    );
+  }
+
+  return body as InitializationSubmissionResponse;
+}
+
+async function expectInitializationSubmissionError(input: {
+  accessToken?: string;
+  organizationId: string;
+  request: InitializationSubmissionRequest;
+  expectedStatus: number;
+  expectedCode: string;
+}): Promise<void> {
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
+
+  if (input.accessToken !== undefined) {
+    headers.authorization = `Bearer ${input.accessToken}`;
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/v1/organizations/${input.organizationId}/initialization-submissions`,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify(input.request),
+    }
+  );
+
+  const body = (await response.json()) as ErrorResponse;
+
+  if (response.status !== input.expectedStatus) {
+    throw new Error(
+      `Expected status ${input.expectedStatus}, received ${
+        response.status
+      }: ${JSON.stringify(body)}`
+    );
+  }
+
+  if (body.error?.code !== input.expectedCode) {
+    throw new Error(
+      `Expected error ${input.expectedCode}, received: ${JSON.stringify(body)}`
+    );
+  }
+
+  console.log(`Rejected as expected: ${response.status} ${body.error.code}`);
+}
+
 async function main(): Promise<void> {
   const keypair = await loadKeypair();
   const walletAddress = keypair.publicKey.toBase58();
@@ -392,7 +493,186 @@ async function main(): Promise<void> {
     `Owner wallet: ${provisioning.ownerMember.requestedAuthorizedWallet}`
   );
   console.log(`Owner roles: ${provisioning.ownerMember.requestedRoles}`);
-  console.log("DATABASE ORGANIZATION PROVISIONING PASSED");
+  console.log("DATABASE ORGANIZATION CREATION PASSED");
+
+  /*
+   * This is structurally a Solana signature because it decodes to 64 bytes.
+   * It has not been submitted to devnet. At this checkpoint we are testing
+   * submission recording, idempotency and database state transitions.
+   */
+  const transactionSignature = bs58.encode(nacl.randomBytes(64));
+
+  const initializationRequest: InitializationSubmissionRequest = {
+    idempotencyKey: randomUUID(),
+    transactionSignature,
+    lastValidBlockHeight: 1_000_000_000,
+    submissionStatus: "submitted",
+  };
+
+  await expectInitializationSubmissionError({
+    organizationId: provisioning.organization.organizationId,
+    request: initializationRequest,
+    expectedStatus: 401,
+    expectedCode: "missing_authentication_token",
+  });
+
+  console.log("UNAUTHENTICATED INITIALIZATION REJECTION PASSED");
+
+  await expectInitializationSubmissionError({
+    accessToken: session.accessToken,
+    organizationId: provisioning.organization.organizationId,
+    request: {
+      ...initializationRequest,
+      idempotencyKey: randomUUID(),
+      transactionSignature: "not-a-solana-signature",
+    },
+    expectedStatus: 400,
+    expectedCode: "invalid_transaction_signature",
+  });
+
+  console.log("INVALID TRANSACTION SIGNATURE REJECTION PASSED");
+
+  const firstSubmission = await recordInitializationSubmission({
+    accessToken: session.accessToken,
+    organizationId: provisioning.organization.organizationId,
+    request: initializationRequest,
+  });
+
+  if (
+    firstSubmission.organizationId !== provisioning.organization.organizationId
+  ) {
+    throw new Error("Submission belongs to a different organization");
+  }
+
+  if (firstSubmission.ownerMemberId !== provisioning.ownerMember.memberId) {
+    throw new Error("Submission references a different owner member");
+  }
+
+  if (
+    firstSubmission.organizationStatus !== "provisioning" ||
+    firstSubmission.ownerMemberStatus !== "provisioning"
+  ) {
+    throw new Error("Organization and owner must transition to provisioning");
+  }
+
+  if (firstSubmission.submissionStatus !== "submitted") {
+    throw new Error(
+      `Expected submitted status, received ${firstSubmission.submissionStatus}`
+    );
+  }
+
+  console.log(`Submission ID: ${firstSubmission.submissionId}`);
+  console.log(`Idempotency key: ${firstSubmission.idempotencyKey}`);
+  console.log(`Transaction signature: ${transactionSignature}`);
+  console.log("INITIALIZATION SUBMISSION RECORDING PASSED");
+
+  /*
+   * Send exactly the same logical request again. This represents an HTTP
+   * retry after the client was unsure whether it received the first response.
+   */
+  const retriedSubmission = await recordInitializationSubmission({
+    accessToken: session.accessToken,
+    organizationId: provisioning.organization.organizationId,
+    request: initializationRequest,
+  });
+
+  if (retriedSubmission.submissionId !== firstSubmission.submissionId) {
+    throw new Error("Idempotent retry created a different submission");
+  }
+
+  if (retriedSubmission.createdAt !== firstSubmission.createdAt) {
+    throw new Error("Idempotent retry created a new database row");
+  }
+
+  console.log(
+    `Retry returned original submission: ${retriedSubmission.submissionId}`
+  );
+  console.log("IDEMPOTENT INITIALIZATION RETRY PASSED");
+
+  /*
+   * Reusing the key with different input is not a retry. It is an attempt
+   * to give one idempotency key two different meanings.
+   */
+  await expectInitializationSubmissionError({
+    accessToken: session.accessToken,
+    organizationId: provisioning.organization.organizationId,
+    request: {
+      ...initializationRequest,
+      lastValidBlockHeight: initializationRequest.lastValidBlockHeight + 1,
+    },
+    expectedStatus: 409,
+    expectedCode: "idempotency_key_conflict",
+  });
+
+  console.log("IDEMPOTENCY KEY CONFLICT REJECTION PASSED");
+
+  /*
+   * A second draft organization attempts to report the same transaction
+   * signature using a different idempotency key.
+   */
+  const secondOrganization = await createOrganization(session.accessToken);
+
+  await expectInitializationSubmissionError({
+    accessToken: session.accessToken,
+    organizationId: secondOrganization.organization.organizationId,
+    request: {
+      ...initializationRequest,
+      idempotencyKey: randomUUID(),
+    },
+    expectedStatus: 409,
+    expectedCode: "transaction_signature_already_recorded",
+  });
+
+  console.log("DUPLICATE TRANSACTION SIGNATURE REJECTION PASSED");
+
+  /*
+   * Simulate two identical HTTP requests arriving at nearly the same time.
+   *
+   * Both requests use the same organization, idempotency key and transaction
+   * details. The organization row lock serializes their state transitions.
+   */
+  const concurrentOrganization = await createOrganization(session.accessToken);
+
+  const concurrentRequest: InitializationSubmissionRequest = {
+    idempotencyKey: randomUUID(),
+    transactionSignature: bs58.encode(nacl.randomBytes(64)),
+    lastValidBlockHeight: 1_000_000_000,
+    submissionStatus: "submitted",
+  };
+
+  const [concurrentResultOne, concurrentResultTwo] = await Promise.all([
+    recordInitializationSubmission({
+      accessToken: session.accessToken,
+      organizationId: concurrentOrganization.organization.organizationId,
+      request: concurrentRequest,
+    }),
+
+    recordInitializationSubmission({
+      accessToken: session.accessToken,
+      organizationId: concurrentOrganization.organization.organizationId,
+      request: concurrentRequest,
+    }),
+  ]);
+
+  if (concurrentResultOne.submissionId !== concurrentResultTwo.submissionId) {
+    throw new Error(
+      "Concurrent retries produced different transaction submissions"
+    );
+  }
+
+  if (
+    concurrentResultOne.idempotencyKey !== concurrentResultTwo.idempotencyKey
+  ) {
+    throw new Error("Concurrent retries returned different idempotency keys");
+  }
+
+  console.log(
+    `Concurrent organization: ${concurrentOrganization.organization.organizationId}`
+  );
+  console.log(
+    `Both requests returned submission: ${concurrentResultOne.submissionId}`
+  );
+  console.log("CONCURRENT IDEMPOTENT RETRY PASSED");
 
   /*
    * Submit the same signed challenge again. The database row is already

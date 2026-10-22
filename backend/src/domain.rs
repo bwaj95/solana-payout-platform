@@ -1,3 +1,5 @@
+use serde::Deserialize;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LifecycleStatus {
     Draft,
@@ -42,6 +44,22 @@ impl TransactionSubmissionStatus {
     }
 }
 
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ReportSubmissionStatus {
+    Submitted,
+    Unknown,
+}
+
+impl ReportSubmissionStatus {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Submitted => TransactionSubmissionStatus::Submitted.as_str(),
+            Self::Unknown => TransactionSubmissionStatus::Unknown.as_str(),
+        }
+    }
+}
+
 /*
  * These values must remain aligned with the Anchor program's role bitmask.
  */
@@ -57,3 +75,6 @@ pub const INITIAL_OWNER_ROLES: i32 = ROLE_OWNER | ROLE_ADMIN;
 
 pub const ASSIGNABLE_MEMBER_ROLES: i32 =
     ROLE_ADMIN | ROLE_PREPARER | ROLE_APPROVER | ROLE_EXECUTOR | ROLE_FINANCE | ROLE_TREASURY;
+
+pub const INITIALIZE_ORGANIZATION_INSTRUCTION: &str = "initialize_organization";
+pub const RECONCILE_TRANSACTION_SUBMISSION_JOB: &str = "reconcile_transaction_submission";

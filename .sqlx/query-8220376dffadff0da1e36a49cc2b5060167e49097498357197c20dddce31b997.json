@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE organization_members\n        SET lifecycle_status = $3\n        WHERE organization_id = $1 AND member_id = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Numeric",
+        "Numeric",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8220376dffadff0da1e36a49cc2b5060167e49097498357197c20dddce31b997"
+}

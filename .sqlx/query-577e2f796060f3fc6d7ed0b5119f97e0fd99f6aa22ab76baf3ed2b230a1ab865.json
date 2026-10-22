@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE organizations\n        SET status = $2\n        WHERE organization_id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Numeric",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "577e2f796060f3fc6d7ed0b5119f97e0fd99f6aa22ab76baf3ed2b230a1ab865"
+}

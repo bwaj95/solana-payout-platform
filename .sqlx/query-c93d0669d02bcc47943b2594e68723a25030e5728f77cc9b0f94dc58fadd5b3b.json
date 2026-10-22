@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO jobs (\n            organization_id,\n            submission_id,\n            job_type,\n            payload,\n            idempotency_key\n        )\n        VALUES (\n            $1,\n            $2,\n            $3,\n            $4,\n            $5\n        )\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Numeric",
+        "Int8",
+        "Text",
+        "Jsonb",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c93d0669d02bcc47943b2594e68723a25030e5728f77cc9b0f94dc58fadd5b3b"
+}
