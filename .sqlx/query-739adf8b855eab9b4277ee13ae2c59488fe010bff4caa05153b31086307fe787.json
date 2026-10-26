@@ -1,0 +1,84 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH candidate as (\n            SELECT job_id\n            FROM jobs\n            WHERE \n                status = 'queued'\n                AND job_type = $1\n                AND run_at <= now()\n                AND attempts < max_attempts\n            ORDER BY \n                priority ASC,\n                run_at ASC,\n                job_id ASC\n            FOR UPDATE SKIP LOCKED\n            LIMIT 1\n        )\n        UPDATE jobs as job\n        SET \n            status = 'running',\n            attempts = job.attempts + 1,\n            locked_at = now(),\n            locked_by = $2,\n            lease_expires_at = now() + ($3::BIGINT * INTERVAL '1 second')\n        FROM candidate\n        WHERE job.job_id = candidate.job_id\n        RETURNING\n            job.job_id,\n            job.organization_id,\n            job.submission_id,\n            job.job_type,\n            job.payload,\n            job.idempotency_key,\n            job.attempts,\n            job.max_attempts,\n            job.locked_at AS \"locked_at!\",\n            job.locked_by AS \"locked_by!\",\n            job.lease_expires_at AS \"lease_expires_at!\"\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "job_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "organization_id",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 2,
+        "name": "submission_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "job_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "payload",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 5,
+        "name": "idempotency_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "attempts",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "max_attempts",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "locked_at!",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "locked_by!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "lease_expires_at!",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "739adf8b855eab9b4277ee13ae2c59488fe010bff4caa05153b31086307fe787"
+}

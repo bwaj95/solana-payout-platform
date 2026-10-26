@@ -7,6 +7,7 @@ pub mod state;
 mod auth;
 mod domain;
 mod error;
+pub mod jobs;
 mod organization_initialization;
 mod organizations;
 

@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH expired_jobs as (\n            SELECT job_id\n            FROM jobs\n            WHERE\n                status = 'running'\n                AND lease_expires_at <= now()\n            ORDER BY\n                lease_expires_at ASC,\n                job_id ASC\n            FOR UPDATE SKIP LOCKED\n            LIMIT $1\n        )\n        UPDATE jobs as job\n        SET\n            status = CASE\n                WHEN job.attempts >= job.max_attempts THEN 'dead'\n                ELSE 'queued'\n            END,\n\n            run_at = CASE\n                WHEN job.attempts >= job.max_attempts THEN job.run_at\n                ELSE now() + ($2::BIGINT * INTERVAL '1 second')\n            END,\n\n            completed_at = CASE\n                WHEN job.attempts >= job.max_attempts THEN now()\n                ELSE NULL\n            END,\n\n            last_error = CASE\n                WHEN job.attempts >= job.max_attempts THEN 'worker lease expired after final attempt'\n                ELSE 'worker lease expired before completion'\n            END,\n\n            locked_at = NULL,\n            locked_by = NULL,\n            lease_expires_at = NULL\n\n        FROM expired_jobs\n        WHERE job.job_id = expired_jobs.job_id\n        RETURNING job.status\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "status",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "15d79b1fb899ab182acf2acdb190fb90e784b2a58d92d87b398b7b20dbaa67d0"
+}
