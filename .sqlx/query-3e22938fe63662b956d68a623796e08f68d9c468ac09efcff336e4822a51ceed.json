@@ -1,0 +1,89 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            submission.submission_id,\n            submission.organization_id,\n\n            submission.cluster,\n            submission.program_id,\n            submission.instruction_name,\n            submission.signer_wallet,\n\n            submission.transaction_signature,\n            submission.last_valid_block_height,\n            submission.status,\n\n            owner_member.member_id AS owner_member_id,\n            organization.status AS organization_status,\n            owner_member.lifecycle_status\n                AS owner_member_status\n\n        FROM transaction_submissions AS submission\n\n        JOIN organizations AS organization\n          ON organization.organization_id =\n             submission.organization_id\n\n        JOIN organization_members AS owner_member\n          ON owner_member.organization_id =\n             submission.organization_id\n         AND (owner_member.requested_roles & $2) <> 0\n\n        WHERE submission.submission_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "submission_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "organization_id",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 2,
+        "name": "cluster",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "program_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "instruction_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "signer_wallet",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "transaction_signature",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "last_valid_block_height",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "owner_member_id",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 10,
+        "name": "organization_status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "owner_member_status",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "3e22938fe63662b956d68a623796e08f68d9c468ac09efcff336e4822a51ceed"
+}

@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO member_chain_accounts (\n            organization_id,\n            member_id,\n            cluster,\n            program_id,\n            organization_pda,\n            member_pda,\n            authorized_wallet,\n            authorization_revision,\n            roles,\n            active,\n            bump,\n            observed_slot,\n            observed_commitment\n        )\n        VALUES (\n            $1,\n            $2,\n            $3,\n            $4,\n            $5,\n            $6,\n            $7,\n            $8,\n            $9,\n            $10,\n            $11,\n            $12,\n            'finalized'\n        )\n\n        ON CONFLICT ON CONSTRAINT member_chain_accounts_pkey\n        DO UPDATE SET\n            organization_pda = EXCLUDED.organization_pda,\n            member_pda = EXCLUDED.member_pda,\n            authorized_wallet = EXCLUDED.authorized_wallet,\n            authorization_revision =\n                EXCLUDED.authorization_revision,\n            roles = EXCLUDED.roles,\n            active = EXCLUDED.active,\n            bump = EXCLUDED.bump,\n            observed_slot = EXCLUDED.observed_slot,\n            observed_commitment =\n                EXCLUDED.observed_commitment,\n            last_synced_at = now()\n\n        WHERE EXCLUDED.observed_slot\n              >= member_chain_accounts.observed_slot\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Numeric",
+        "Numeric",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Numeric",
+        "Int4",
+        "Bool",
+        "Int2",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5fdec65cfd65d74de89ee479777b97e30975051693ee59f9fc714555351873d4"
+}

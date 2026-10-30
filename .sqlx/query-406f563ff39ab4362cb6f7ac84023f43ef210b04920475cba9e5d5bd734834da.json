@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE transaction_submissions\n\n        SET\n            status = 'finalized',\n            confirmed_slot = $2,\n            observed_commitment = 'finalized',\n\n            last_checked_at = now(),\n            confirmed_at = COALESCE(confirmed_at, now()),\n            finalized_at = now(),\n\n            failed_at = NULL,\n            error_code = NULL,\n            error_message = NULL\n\n        WHERE submission_id = $1\n          AND status IN (\n              'submitted',\n              'unknown',\n              'confirmed'\n          )\n\n        RETURNING submission_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "submission_id",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "406f563ff39ab4362cb6f7ac84023f43ef210b04920475cba9e5d5bd734834da"
+}

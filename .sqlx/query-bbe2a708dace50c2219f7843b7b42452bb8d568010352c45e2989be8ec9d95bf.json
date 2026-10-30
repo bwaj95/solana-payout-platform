@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE organizations\n        SET status = 'active'\n        WHERE organization_id = $1\n          AND status IN (\n              'provisioning',\n              'active'\n          )\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Numeric"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "bbe2a708dace50c2219f7843b7b42452bb8d568010352c45e2989be8ec9d95bf"
+}

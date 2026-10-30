@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE organization_members\n        SET lifecycle_status = 'draft'\n        WHERE organization_id = $1\n          AND member_id = $2\n          AND lifecycle_status IN (\n              'draft',\n              'provisioning'\n          )\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Numeric",
+        "Numeric"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9e0228fa16aecec1bdc4d51ffe9bcd1652a4ce7c42309f5d6abcec98a4d13a15"
+}

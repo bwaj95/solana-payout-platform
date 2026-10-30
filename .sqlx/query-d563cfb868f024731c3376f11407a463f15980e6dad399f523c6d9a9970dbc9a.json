@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE transaction_submissions\n\n        SET\n            /*\n             * A confirmed submission must never move backwards because a\n             * later request reached a stale RPC node.\n             *\n             * submitted and unknown may move between each other because they\n             * represent the latest ambiguous, non-final observation.\n             */\n            status = CASE\n                WHEN status = 'confirmed' THEN 'confirmed'\n                ELSE $2::TEXT\n            END,\n\n            confirmed_slot = CASE\n                WHEN status = 'confirmed' THEN confirmed_slot\n                WHEN $2::TEXT = 'confirmed' THEN $3::BIGINT\n                ELSE confirmed_slot\n            END,\n\n            observed_commitment = CASE\n                WHEN status = 'confirmed' THEN observed_commitment\n                WHEN $2::TEXT = 'confirmed' THEN 'confirmed'\n                ELSE observed_commitment\n            END,\n\n            confirmed_at = CASE\n                WHEN status = 'confirmed' THEN confirmed_at\n                WHEN $2::TEXT = 'confirmed'\n                    THEN COALESCE(confirmed_at, now())\n                ELSE confirmed_at\n            END,\n\n            last_checked_at = now(),\n\n            /*\n             * A valid non-terminal RPC observation means there is no current\n             * terminal transaction error to expose.\n             */\n            error_code = NULL,\n            error_message = NULL\n\n        WHERE submission_id = $1\n          AND status IN (\n              'submitted',\n              'unknown',\n              'confirmed'\n          )\n\n        RETURNING status\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "status",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "d563cfb868f024731c3376f11407a463f15980e6dad399f523c6d9a9970dbc9a"
+}

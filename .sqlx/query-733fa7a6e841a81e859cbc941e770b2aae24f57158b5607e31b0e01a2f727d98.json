@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO organization_chain_accounts (\n            organization_id,\n            cluster,\n            program_id,\n            organization_pda,\n            creator_wallet,\n            owner_member_pda,\n            paused,\n            bump,\n            observed_slot,\n            observed_commitment\n        )\n        VALUES (\n            $1,\n            $2,\n            $3,\n            $4,\n            $5,\n            $6,\n            $7,\n            $8,\n            $9,\n            'finalized'\n        )\n\n        ON CONFLICT ON CONSTRAINT organization_chain_accounts_pkey\n        DO UPDATE SET\n            organization_pda = EXCLUDED.organization_pda,\n            creator_wallet = EXCLUDED.creator_wallet,\n            owner_member_pda = EXCLUDED.owner_member_pda,\n            paused = EXCLUDED.paused,\n            bump = EXCLUDED.bump,\n            observed_slot = EXCLUDED.observed_slot,\n            observed_commitment = EXCLUDED.observed_commitment,\n            last_synced_at = now()\n\n        WHERE EXCLUDED.observed_slot\n              >= organization_chain_accounts.observed_slot\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Numeric",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Bool",
+        "Int2",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "733fa7a6e841a81e859cbc941e770b2aae24f57158b5607e31b0e01a2f727d98"
+}

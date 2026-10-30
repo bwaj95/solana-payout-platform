@@ -1,0 +1,27 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE transaction_submissions\n\n        SET\n            status = $2,\n\n            confirmed_slot = CASE\n                WHEN $3::BOOLEAN THEN $4::BIGINT\n                ELSE confirmed_slot\n            END,\n\n            observed_commitment = CASE\n                WHEN $3::BOOLEAN THEN 'finalized'\n                ELSE observed_commitment\n            END,\n\n            confirmed_at = CASE\n                WHEN $3::BOOLEAN\n                    THEN COALESCE(confirmed_at, now())\n                ELSE confirmed_at\n            END,\n\n            finalized_at = CASE\n                WHEN $3::BOOLEAN THEN now()\n                ELSE finalized_at\n            END,\n\n            failed_at = now(),\n            last_checked_at = now(),\n\n            error_code = $5,\n            error_message = $6\n\n        WHERE submission_id = $1\n          AND status IN (\n              'submitted',\n              'unknown',\n              'confirmed'\n          )\n\n        RETURNING submission_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "submission_id",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Bool",
+        "Int8",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "33790188959fb7f3fd897ebcd77c2a05f10b52ecaab8b948650c03710de5dcf8"
+}

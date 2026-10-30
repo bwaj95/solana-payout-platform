@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE organizations\n        SET status = 'draft'\n        WHERE organization_id = $1\n          AND status IN (\n              'draft',\n              'provisioning'\n          )\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Numeric"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2adf454e658547b78743fecc64c4f864de9209008c4748eeac5c035bfb9f792e"
+}
