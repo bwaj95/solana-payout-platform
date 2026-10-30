@@ -1,8 +1,10 @@
 # Solana Payout Platform
 
-A role-controlled business payout protocol built with Anchor. Organizations can register members and recipients, configure versioned approval policies, reserve vault liquidity when an approval threshold is reached, and execute auditable SPL-token payouts on Solana.
+An organization-governed payout protocol for securely paying employees, contractors, contributors, vendors, service providers, and other individual or organizational recipients on Solana.
 
-The current capstone scope is the on-chain payout engine and its TypeScript devnet client. It supports public SPL-token settlement. Native SOL settlement, privacy rails, recurring payouts, and the web application are future work.
+The current build includes a deployed Anchor public SPL-token settlement rail, a TypeScript devnet client, and a Rust/Axum/PostgreSQL control-plane foundation. The backend implements wallet authentication, organization provisioning, idempotent transaction tracking, a leased PostgreSQL job queue, finalized Solana transaction validation, on-chain account validation, and atomic reconciliation settlement.
+
+The public payout rail is working end-to-end on Solana devnet. The reconciliation worker runtime, broader product APIs, web dashboard, and MagicBlock private settlement rail remain under active development.
 
 ## Devnet deployment
 
@@ -26,6 +28,23 @@ The deterministic Rust integration suite contains **132 passing tests** across 1
 The live devnet scripts separately prove that the deployed binary can be invoked and that the complete governed payout flow succeeds on the public network.
 
 ![All 132 Rust integration tests passing](docs/all-tests-passing.png)
+
+## Current implementation status
+
+| Component | Status |
+| --- | --- |
+| Anchor public SPL payout rail | Deployed and working on devnet |
+| Two-of-two governed payment flow | Demonstrated end-to-end |
+| Anchor integration suite | 132 tests passing |
+| TypeScript devnet client | Working |
+| Wallet authentication and sessions | Implemented |
+| Organization and owner provisioning | Implemented |
+| Transaction submission tracking | Implemented with idempotency protection |
+| PostgreSQL job queue | Implemented with leases, fencing, retries, deferral, recovery, and dead-lettering |
+| Finalized Solana reconciliation processor | Implemented and tested |
+| Standalone reconciliation worker runtime | Next implementation step |
+| Product APIs and web dashboard | Planned next phase |
+| MagicBlock private payout rail | Experimental integration in progress |
 
 ## Problem and solution
 
@@ -177,23 +196,47 @@ pnpm devnet:e2e
 ## Repository structure
 
 ```text
-programs/solana-payout-platform/src/
-├── instructions/       # Anchor account validation and handlers
-├── constants.rs        # Seeds, roles, revisions, protocol bounds
-├── error.rs            # Explicit program errors
-├── events.rs           # Audit and indexing events
-├── payment_terms.rs    # Domain-separated payment terms hash
-└── state.rs            # PDA account and state-machine types
+programs/solana-payout-platform/
+├── src/instructions/       # Anchor validation and instruction handlers
+├── src/state.rs            # PDA accounts and payment state machines
+├── src/events.rs           # Audit and indexing events
+└── tests/                  # 132 LiteSVM integration tests
 
-programs/solana-payout-platform/tests/
-├── common/             # Modular fixtures, PDA and instruction helpers
-└── test_*.rs           # 132 instruction and invariant tests
+backend/
+├── src/auth.rs             # Wallet challenges, signature verification and sessions
+├── src/jobs.rs             # PostgreSQL job queue, leases, fencing and recovery
+├── src/solana_rpc.rs       # Typed Solana JSON-RPC client
+├── src/transaction_validation.rs
+├── src/account_validation.rs
+├── src/reconciliation.rs   # Atomic reconciliation settlement
+├── src/reconciliation_worker.rs
+└── tests/                  # Queue, concurrency and reconciliation tests
 
-clients/solana/          # Shared IDL, program factory, constants and PDA helpers
-scripts/                 # Live devnet smoke and end-to-end flows
-docs/                    # Submission evidence images
+clients/solana/             # IDL, program construction and PDA helpers
+migrations/                 # Versioned PostgreSQL schema
+infrastructure/             # Local PostgreSQL Docker Compose setup
+scripts/                    # Authentication and live devnet flows
+docs/                       # Architecture diagrams and test evidence
+.sqlx/                      # Offline SQLx compile-time query metadata
 ```
 
 ## Current scope and next phase
 
-This submission deliberately keeps the trusted settlement logic on-chain and proves it independently before adding product infrastructure. The next phase is a web dashboard and Axum/PostgreSQL service for organization operations, queued submissions, event indexing, reconciliation, notifications, batch workflows, and recurring payout scheduling.
+The current public settlement rail is deployed and proves the governed payout lifecycle independently on Solana devnet. The backend foundation now covers authenticated organization provisioning, idempotent transaction submissions, reliable PostgreSQL job processing, typed Solana RPC access, finalized transaction and account validation, and atomic reconciliation settlement.
+
+The next implementation phase is to:
+
+1. wire the reconciliation processor into a continuously running worker process;
+2. complete APIs for members, recipients, vaults, policies, payments, and approvals;
+3. build the wallet-connected web dashboard;
+4. deploy the API, PostgreSQL database, worker, and frontend;
+5. integrate MagicBlock Private Ephemeral Rollups as a private SPL settlement rail;
+6. reconcile private and public outcomes without exposing sensitive payout data.
+
+The private-settlement research and its currently reproducible PER integration issue are documented in the [three-recipient privacy lab](https://github.com/bwaj95/three-recipient-privacy-lab).
+
+## Demo
+
+[Watch the governed devnet payout demonstration](https://www.youtube.com/watch?v=Fo1eSrDH8zQ)
+
+The demonstration creates an organization, two approvers, an executor, an SPL vault, a recipient, and a two-of-two approval policy. It then prepares a payment, records both approvals, reserves the funds, executes the transfer, and verifies the final `Paid` and `Consumed` states.
