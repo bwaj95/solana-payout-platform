@@ -12,7 +12,8 @@ use payout_backend::{
     reconciliation::{
         InitializeOrganizationReconciliationContext, ReconciliationSettlementError,
         TerminalSubmissionOutcome, settle_deferred_signature_observation,
-        settle_finalized_initialize_organization, settle_terminal_submission_failure,
+        settle_finalized_initialize_organization, settle_inconclusive_after_confirmation,
+        settle_terminal_submission_failure,
     },
     reconciliation_worker::{
         InitializeOrganizationProcessingResult, ReconciliationRpc,
@@ -600,6 +601,37 @@ fn reconciliation_context(fixture: &TestFixture) -> InitializeOrganizationReconc
         organization_status: "provisioning".to_owned(),
         owner_member_status: "provisioning".to_owned(),
     }
+}
+
+async fn mark_fixture_submission_confirmed(
+    pool: &PgPool,
+    fixture: &TestFixture,
+    confirmed_slot: i64,
+) -> Result<(), sqlx::Error> {
+    let updated_submission_id = sqlx::query_scalar!(
+        r#"
+        UPDATE transaction_submissions
+
+        SET
+            status = 'confirmed',
+            confirmed_slot = $2,
+            observed_commitment = 'confirmed',
+            confirmed_at = now() - INTERVAL '1 minute',
+            last_checked_at = now() - INTERVAL '1 minute'
+
+        WHERE submission_id = $1
+
+        RETURNING submission_id
+        "#,
+        fixture.submission_id,
+        confirmed_slot,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    assert_eq!(updated_submission_id, fixture.submission_id);
+
+    Ok(())
 }
 
 fn unique_pubkey() -> String {
@@ -2793,6 +2825,478 @@ async fn processor_validates_finalized_transaction_and_persists_all_projections(
             finalized_accounts: 1,
         }
     );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn inconclusive_after_confirmation_preserves_submission_and_defers_job()
+-> Result<(), Box<dyn Error>> {
+    let pool = connect_test_pool().await?;
+    let fixture = insert_test_fixture(&pool).await?;
+
+    let original_confirmed_slot = 875_000_000_i64;
+
+    mark_fixture_submission_confirmed(&pool, &fixture, original_confirmed_slot).await?;
+
+    let original_submission = sqlx::query!(
+        r#"
+        SELECT
+            status,
+            confirmed_slot,
+            observed_commitment,
+            confirmed_at,
+            last_checked_at
+        FROM transaction_submissions
+        WHERE submission_id = $1
+        "#,
+        fixture.submission_id,
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    let worker_id = format!("inconclusive-confirmed-worker:{}", Uuid::new_v4());
+
+    let claimed_job = claim_fixture_job(&pool, &fixture, &worker_id).await?;
+
+    settle_inconclusive_after_confirmation(&pool, &claimed_job, fixture.submission_id, 30).await?;
+
+    let stored_submission = sqlx::query!(
+        r#"
+        SELECT
+            status,
+            confirmed_slot,
+            observed_commitment,
+            confirmed_at,
+            last_checked_at,
+            finalized_at,
+            failed_at,
+            error_code,
+            error_message
+        FROM transaction_submissions
+        WHERE submission_id = $1
+        "#,
+        fixture.submission_id,
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    let lifecycle = sqlx::query!(
+        r#"
+        SELECT
+            organization.status AS organization_status,
+            owner_member.lifecycle_status AS owner_member_status
+
+        FROM organizations AS organization
+
+        JOIN organization_members AS owner_member
+          ON owner_member.organization_id =
+             organization.organization_id
+         AND owner_member.member_id = $2
+
+        WHERE organization.organization_id = $1
+        "#,
+        &fixture.organization_id,
+        &fixture.owner_member_id,
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    let stored_job = sqlx::query!(
+        r#"
+        SELECT
+            status,
+            attempts,
+            run_at,
+            locked_at,
+            locked_by,
+            lease_expires_at,
+            completed_at
+        FROM jobs
+        WHERE job_id = $1
+        "#,
+        fixture.job_id,
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    let confirmed_transition_count = sqlx::query_scalar!(
+        r#"
+        SELECT COUNT(*) AS "count!"
+        FROM transaction_submission_status_history
+        WHERE submission_id = $1
+          AND previous_status = 'submitted'
+          AND new_status = 'confirmed'
+        "#,
+        fixture.submission_id,
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    cleanup_fixture(&pool, &fixture).await?;
+
+    assert_eq!(original_submission.status, "confirmed");
+
+    assert_eq!(stored_submission.status, "confirmed");
+
+    assert_eq!(
+        stored_submission.confirmed_slot,
+        Some(original_confirmed_slot)
+    );
+
+    assert_eq!(
+        stored_submission.observed_commitment.as_deref(),
+        Some("confirmed")
+    );
+
+    /*
+     * The inconclusive observation must preserve the time at which the
+     * transaction was originally confirmed.
+     */
+    assert_eq!(
+        stored_submission.confirmed_at,
+        original_submission.confirmed_at
+    );
+
+    let original_last_checked_at = original_submission
+        .last_checked_at
+        .expect("confirmed fixture should have last_checked_at");
+
+    let stored_last_checked_at = stored_submission
+        .last_checked_at
+        .expect("inconclusive settlement should update last_checked_at");
+
+    assert!(stored_last_checked_at > original_last_checked_at);
+
+    assert!(stored_submission.finalized_at.is_none());
+    assert!(stored_submission.failed_at.is_none());
+    assert!(stored_submission.error_code.is_none());
+    assert!(stored_submission.error_message.is_none());
+
+    /*
+     * The application remains in provisioning because there is no terminal
+     * success or failure yet.
+     */
+    assert_eq!(lifecycle.organization_status, "provisioning");
+    assert_eq!(lifecycle.owner_member_status, "provisioning");
+
+    /*
+     * The job is deferred rather than completed.
+     */
+    assert_eq!(stored_job.status, "queued");
+    assert_eq!(stored_job.attempts, 1);
+    assert!(stored_job.locked_at.is_none());
+    assert!(stored_job.locked_by.is_none());
+    assert!(stored_job.lease_expires_at.is_none());
+    assert!(stored_job.completed_at.is_none());
+
+    /*
+     * Only the fixture's submitted -> confirmed transition exists.
+     * The inconclusive observation did not change the submission status.
+     */
+    assert_eq!(confirmed_transition_count, 1);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn confirmed_submission_cannot_be_settled_as_expired() -> Result<(), Box<dyn Error>> {
+    let pool = connect_test_pool().await?;
+    let fixture = insert_test_fixture(&pool).await?;
+
+    let confirmed_slot = 875_000_100_i64;
+
+    mark_fixture_submission_confirmed(&pool, &fixture, confirmed_slot).await?;
+
+    let worker_id = format!("confirmed-expiry-worker:{}", Uuid::new_v4());
+
+    let claimed_job = claim_fixture_job(&pool, &fixture, &worker_id).await?;
+
+    let mut context = reconciliation_context(&fixture);
+
+    context.submission_status = TransactionSubmissionStatus::Confirmed;
+
+    let settlement_result = settle_terminal_submission_failure(
+        &pool,
+        &claimed_job,
+        &context,
+        &TerminalSubmissionOutcome::Expired,
+    )
+    .await;
+
+    let rejected_as_not_reconcilable = matches!(
+        settlement_result,
+        Err(
+            ReconciliationSettlementError::SubmissionNotReconcilable {
+                submission_id,
+            }
+        ) if submission_id == fixture.submission_id
+    );
+
+    let stored_submission = sqlx::query!(
+        r#"
+        SELECT
+            status,
+            confirmed_slot,
+            observed_commitment,
+            confirmed_at,
+            finalized_at,
+            failed_at,
+            error_code,
+            error_message
+        FROM transaction_submissions
+        WHERE submission_id = $1
+        "#,
+        fixture.submission_id,
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    let lifecycle = sqlx::query!(
+        r#"
+        SELECT
+            organization.status AS organization_status,
+            owner_member.lifecycle_status AS owner_member_status
+
+        FROM organizations AS organization
+
+        JOIN organization_members AS owner_member
+          ON owner_member.organization_id =
+             organization.organization_id
+         AND owner_member.member_id = $2
+
+        WHERE organization.organization_id = $1
+        "#,
+        &fixture.organization_id,
+        &fixture.owner_member_id,
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    let stored_job = sqlx::query!(
+        r#"
+        SELECT
+            status,
+            attempts,
+            locked_at,
+            locked_by,
+            lease_expires_at,
+            completed_at
+        FROM jobs
+        WHERE job_id = $1
+        "#,
+        fixture.job_id,
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    let expired_transition_count = sqlx::query_scalar!(
+        r#"
+        SELECT COUNT(*) AS "count!"
+        FROM transaction_submission_status_history
+        WHERE submission_id = $1
+          AND new_status = 'expired'
+        "#,
+        fixture.submission_id,
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    cleanup_fixture(&pool, &fixture).await?;
+
+    assert!(rejected_as_not_reconcilable);
+
+    /*
+     * The attempted terminal settlement was rolled back.
+     */
+    assert_eq!(stored_submission.status, "confirmed");
+    assert_eq!(stored_submission.confirmed_slot, Some(confirmed_slot));
+
+    assert_eq!(
+        stored_submission.observed_commitment.as_deref(),
+        Some("confirmed")
+    );
+
+    assert!(stored_submission.confirmed_at.is_some());
+    assert!(stored_submission.finalized_at.is_none());
+    assert!(stored_submission.failed_at.is_none());
+    assert!(stored_submission.error_code.is_none());
+    assert!(stored_submission.error_message.is_none());
+
+    assert_eq!(lifecycle.organization_status, "provisioning");
+    assert_eq!(lifecycle.owner_member_status, "provisioning");
+
+    /*
+     * The job remains owned by the worker because the settlement transaction
+     * did not reach mark_job_succeeded.
+     */
+    assert_eq!(stored_job.status, "running");
+    assert_eq!(stored_job.attempts, 1);
+    assert!(stored_job.locked_at.is_some());
+
+    assert_eq!(stored_job.locked_by.as_deref(), Some(worker_id.as_str()));
+
+    assert!(stored_job.lease_expires_at.is_some());
+    assert!(stored_job.completed_at.is_none());
+
+    assert_eq!(expired_transition_count, 0);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn confirmed_submission_can_settle_as_finalized_failure() -> Result<(), Box<dyn Error>> {
+    let pool = connect_test_pool().await?;
+    let fixture = insert_test_fixture(&pool).await?;
+
+    let earlier_confirmed_slot = 875_000_200_i64;
+    let finalized_failure_slot = 875_000_500_u64;
+
+    mark_fixture_submission_confirmed(&pool, &fixture, earlier_confirmed_slot).await?;
+
+    let worker_id = format!("confirmed-finalized-failure-worker:{}", Uuid::new_v4());
+
+    let claimed_job = claim_fixture_job(&pool, &fixture, &worker_id).await?;
+
+    let mut context = reconciliation_context(&fixture);
+
+    context.submission_status = TransactionSubmissionStatus::Confirmed;
+
+    let chain_error = json!({
+        "InstructionError": [
+            0,
+            {
+                "Custom": 6001
+            }
+        ]
+    });
+
+    let expected_error_message = chain_error.to_string();
+
+    settle_terminal_submission_failure(
+        &pool,
+        &claimed_job,
+        &context,
+        &TerminalSubmissionOutcome::FinalizedFailure {
+            transaction_slot: finalized_failure_slot,
+            error: chain_error,
+        },
+    )
+    .await?;
+
+    let stored_submission = sqlx::query!(
+        r#"
+        SELECT
+            status,
+            confirmed_slot,
+            observed_commitment,
+            confirmed_at,
+            finalized_at,
+            failed_at,
+            error_code,
+            error_message
+        FROM transaction_submissions
+        WHERE submission_id = $1
+        "#,
+        fixture.submission_id,
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    let lifecycle = sqlx::query!(
+        r#"
+        SELECT
+            organization.status AS organization_status,
+            owner_member.lifecycle_status AS owner_member_status
+
+        FROM organizations AS organization
+
+        JOIN organization_members AS owner_member
+          ON owner_member.organization_id =
+             organization.organization_id
+         AND owner_member.member_id = $2
+
+        WHERE organization.organization_id = $1
+        "#,
+        &fixture.organization_id,
+        &fixture.owner_member_id,
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    let stored_job = sqlx::query!(
+        r#"
+        SELECT
+            status,
+            attempts,
+            locked_at,
+            locked_by,
+            lease_expires_at,
+            completed_at
+        FROM jobs
+        WHERE job_id = $1
+        "#,
+        fixture.job_id,
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    let failed_transition_count = sqlx::query_scalar!(
+        r#"
+        SELECT COUNT(*) AS "count!"
+        FROM transaction_submission_status_history
+        WHERE submission_id = $1
+          AND previous_status = 'confirmed'
+          AND new_status = 'failed'
+        "#,
+        fixture.submission_id,
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    cleanup_fixture(&pool, &fixture).await?;
+
+    assert_eq!(stored_submission.status, "failed");
+
+    assert_eq!(
+        stored_submission.confirmed_slot,
+        Some(i64::try_from(finalized_failure_slot).expect("test slot should fit in i64"))
+    );
+
+    assert_eq!(
+        stored_submission.observed_commitment.as_deref(),
+        Some("finalized")
+    );
+
+    assert!(stored_submission.confirmed_at.is_some());
+    assert!(stored_submission.finalized_at.is_some());
+    assert!(stored_submission.failed_at.is_some());
+
+    assert_eq!(
+        stored_submission.error_code.as_deref(),
+        Some("solana_transaction_failed")
+    );
+
+    assert_eq!(
+        stored_submission.error_message.as_deref(),
+        Some(expected_error_message.as_str())
+    );
+
+    assert_eq!(lifecycle.organization_status, "draft");
+    assert_eq!(lifecycle.owner_member_status, "draft");
+
+    /*
+     * The chain transaction failed, but the reconciliation job successfully
+     * persisted the authoritative terminal outcome.
+     */
+    assert_eq!(stored_job.status, "succeeded");
+    assert_eq!(stored_job.attempts, 1);
+    assert!(stored_job.locked_at.is_none());
+    assert!(stored_job.locked_by.is_none());
+    assert!(stored_job.lease_expires_at.is_none());
+    assert!(stored_job.completed_at.is_some());
+
+    assert_eq!(failed_transition_count, 1);
 
     Ok(())
 }

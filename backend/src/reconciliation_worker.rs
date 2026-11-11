@@ -14,7 +14,7 @@ use crate::{
         ReconciliationSettlementError, SignatureClassificationError, SignatureReconciliationAction,
         TerminalSubmissionOutcome, classify_signature_lookup, load_initialize_organization_context,
         settle_deferred_signature_observation, settle_finalized_initialize_organization,
-        settle_terminal_submission_failure,
+        settle_inconclusive_after_confirmation, settle_terminal_submission_failure,
     },
     solana_rpc::{
         FinalizedAccountsLookup, FinalizedTransaction, SignatureStatusLookup, SolanaRpcClient,
@@ -101,6 +101,8 @@ pub enum InitializeOrganizationProcessingResult {
     Deferred {
         submission_status: TransactionSubmissionStatus,
     },
+
+    InconclusiveAfterConfirmation,
 
     Expired,
 
@@ -246,7 +248,9 @@ where
      * If the signature exists, its confirmation status already tells us
      * what to do.
      */
-    let current_finalized_block_height = if signature_lookup.found_status.is_none() {
+    let current_finalized_block_height = if signature_lookup.found_status.is_none()
+        && context.submission_status != TransactionSubmissionStatus::Confirmed
+    {
         Some(rpc.get_finalized_block_height().await?)
     } else {
         None
@@ -254,6 +258,7 @@ where
 
     let action = classify_signature_lookup(
         &signature_lookup,
+        context.submission_status,
         context.last_valid_block_height,
         current_finalized_block_height,
     )?;
@@ -287,6 +292,18 @@ where
             .await?;
 
             return Ok(InitializeOrganizationProcessingResult::Deferred { submission_status });
+        }
+
+        SignatureReconciliationAction::InconclusiveAfterConfirmation => {
+            settle_inconclusive_after_confirmation(
+                pool,
+                claimed_job,
+                context.submission_id,
+                defer_seconds,
+            )
+            .await?;
+
+            return Ok(InitializeOrganizationProcessingResult::InconclusiveAfterConfirmation);
         }
 
         SignatureReconciliationAction::Expired => {

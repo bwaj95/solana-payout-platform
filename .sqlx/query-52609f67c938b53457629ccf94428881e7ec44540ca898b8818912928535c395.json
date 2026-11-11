@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE transaction_submissions\n        SET last_checked_at = now()\n        WHERE submission_id = $1\n            AND status = 'confirmed'\n        RETURNING submission_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "submission_id",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "52609f67c938b53457629ccf94428881e7ec44540ca898b8818912928535c395"
+}

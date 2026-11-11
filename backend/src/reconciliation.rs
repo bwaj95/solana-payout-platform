@@ -628,12 +628,24 @@ pub async fn settle_terminal_submission_failure(
             error_message = $6
 
         WHERE submission_id = $1
-          AND status IN (
-              'submitted',
-              'unknown',
-              'confirmed'
-          )
-
+        AND (
+                (
+                    $3::BOOLEAN = TRUE
+                    AND status IN (
+                        'submitted',
+                        'unknown',
+                        'confirmed'
+                    )
+                )
+                OR
+                (
+                    $3::BOOLEAN = FALSE
+                    AND status IN (
+                        'submitted',
+                        'unknown'
+                    )
+                )
+        )
         RETURNING submission_id
         "#,
         context.submission_id,
@@ -714,6 +726,46 @@ pub async fn settle_terminal_submission_failure(
      * back.
      */
     mark_job_succeeded(&mut *transaction, claimed_job).await?;
+
+    transaction.commit().await?;
+
+    Ok(())
+}
+
+pub async fn settle_inconclusive_after_confirmation(
+    pool: &PgPool,
+    claimed_job: &ClaimedJob,
+    submission_id: i64,
+    defer_seconds: i64,
+) -> Result<(), ReconciliationSettlementError> {
+    if claimed_job.submission_id != Some(submission_id) {
+        return Err(ReconciliationSettlementError::SubmissionMismatch {
+            job_id: claimed_job.job_id,
+            claimed_submission_id: claimed_job.submission_id,
+            settled_submission_id: submission_id,
+        });
+    }
+
+    let mut transaction = pool.begin().await?;
+
+    let updated_submission_id = sqlx::query_scalar!(
+        r#"
+        UPDATE transaction_submissions
+        SET last_checked_at = now()
+        WHERE submission_id = $1
+            AND status = 'confirmed'
+        RETURNING submission_id
+        "#,
+        submission_id,
+    )
+    .fetch_optional(&mut *transaction)
+    .await?;
+
+    if updated_submission_id.is_none() {
+        return Err(ReconciliationSettlementError::SubmissionNotReconcilable { submission_id });
+    }
+
+    defer_job(&mut transaction, claimed_job, defer_seconds).await?;
 
     transaction.commit().await?;
 
@@ -1214,6 +1266,8 @@ pub enum SignatureReconciliationAction {
         submission_status: TransactionSubmissionStatus,
     },
 
+    InconclusiveAfterConfirmation,
+
     InspectFinalizedTransaction {
         transaction_slot: u64,
     },
@@ -1250,6 +1304,7 @@ pub enum SignatureClassificationError {
 
 pub fn classify_signature_lookup(
     lookup: &SignatureStatusLookup,
+    previous_status: TransactionSubmissionStatus,
     last_valid_block_height: u64,
 
     /*
@@ -1259,6 +1314,10 @@ pub fn classify_signature_lookup(
     current_finalized_block_height: Option<u64>,
 ) -> Result<SignatureReconciliationAction, SignatureClassificationError> {
     let Some(found_status) = &lookup.found_status else {
+        if previous_status == TransactionSubmissionStatus::Confirmed {
+            return Ok(SignatureReconciliationAction::InconclusiveAfterConfirmation);
+        }
+
         let current_block_height = current_finalized_block_height
             .ok_or(SignatureClassificationError::MissingCurrentBlockHeight)?;
 
@@ -1324,7 +1383,12 @@ mod tests {
 
     #[test]
     fn missing_signature_requires_current_block_height() {
-        let result = classify_signature_lookup(&lookup(None), 500, None);
+        let result = classify_signature_lookup(
+            &lookup(None),
+            TransactionSubmissionStatus::Submitted,
+            500,
+            None,
+        );
 
         assert!(matches!(
             result,
@@ -1334,8 +1398,13 @@ mod tests {
 
     #[test]
     fn missing_signature_before_expiration_is_deferred_as_unknown() {
-        let action = classify_signature_lookup(&lookup(None), 500, Some(499))
-            .expect("classification should succeed");
+        let action = classify_signature_lookup(
+            &lookup(None),
+            TransactionSubmissionStatus::Submitted,
+            500,
+            Some(499),
+        )
+        .expect("classification should succeed");
 
         assert_eq!(
             action,
@@ -1347,8 +1416,13 @@ mod tests {
 
     #[test]
     fn missing_signature_at_last_valid_block_height_is_not_expired() {
-        let action = classify_signature_lookup(&lookup(None), 500, Some(500))
-            .expect("classification should succeed");
+        let action = classify_signature_lookup(
+            &lookup(None),
+            TransactionSubmissionStatus::Submitted,
+            500,
+            Some(500),
+        )
+        .expect("classification should succeed");
 
         assert_eq!(
             action,
@@ -1360,8 +1434,13 @@ mod tests {
 
     #[test]
     fn missing_signature_after_last_valid_block_height_is_expired() {
-        let action = classify_signature_lookup(&lookup(None), 500, Some(501))
-            .expect("classification should succeed");
+        let action = classify_signature_lookup(
+            &lookup(None),
+            TransactionSubmissionStatus::Submitted,
+            500,
+            Some(501),
+        )
+        .expect("classification should succeed");
 
         assert_eq!(action, SignatureReconciliationAction::Expired);
     }
@@ -1370,6 +1449,7 @@ mod tests {
     fn processed_signature_is_deferred_as_submitted() {
         let action = classify_signature_lookup(
             &lookup(Some(found_status(ConfirmationStatus::Processed, None))),
+            TransactionSubmissionStatus::Submitted,
             500,
             None,
         )
@@ -1387,6 +1467,7 @@ mod tests {
     fn confirmed_signature_is_deferred_as_confirmed() {
         let action = classify_signature_lookup(
             &lookup(Some(found_status(ConfirmationStatus::Confirmed, None))),
+            TransactionSubmissionStatus::Submitted,
             500,
             None,
         )
@@ -1404,6 +1485,7 @@ mod tests {
     fn finalized_success_is_ready_for_transaction_inspection() {
         let action = classify_signature_lookup(
             &lookup(Some(found_status(ConfirmationStatus::Finalized, None))),
+            TransactionSubmissionStatus::Confirmed,
             500,
             None,
         )
@@ -1433,6 +1515,7 @@ mod tests {
                 ConfirmationStatus::Finalized,
                 Some(transaction_error.clone()),
             ))),
+            TransactionSubmissionStatus::Confirmed,
             500,
             None,
         )
@@ -1444,6 +1527,38 @@ mod tests {
                 transaction_slot: 900,
                 error: transaction_error,
             }
+        );
+    }
+
+    #[test]
+    fn previously_confirmed_missing_signature_is_inconclusive() {
+        let action = classify_signature_lookup(
+            &lookup(None),
+            TransactionSubmissionStatus::Confirmed,
+            500,
+            None,
+        )
+        .expect("classification should succeed");
+
+        assert_eq!(
+            action,
+            SignatureReconciliationAction::InconclusiveAfterConfirmation,
+        );
+    }
+
+    #[test]
+    fn previously_confirmed_missing_signature_is_not_expired_after_last_valid_height() {
+        let action = classify_signature_lookup(
+            &lookup(None),
+            TransactionSubmissionStatus::Confirmed,
+            500,
+            Some(501),
+        )
+        .expect("classification should succeed");
+
+        assert_eq!(
+            action,
+            SignatureReconciliationAction::InconclusiveAfterConfirmation,
         );
     }
 }
